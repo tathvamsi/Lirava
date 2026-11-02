@@ -15,8 +15,8 @@ import type { Conversation, Matter, Message } from "@/lib/types";
 export function Wordmark() {
   return (
     <span className="flex items-center gap-2.5">
-      <span className="flex size-6 items-center justify-center rounded-[var(--radius-pill)] bg-accent text-[12px] font-semibold text-accent-ink">L</span>
-      <span className="font-display text-[20px] font-medium tracking-display text-ink">Lirava</span>
+      <span className="flex size-6 items-center justify-center rounded-[8px] bg-[#292928] text-[12px] font-semibold text-[#f1efea] shadow-sm">S</span>
+      <span className="font-serif text-[20px] font-medium tracking-[-0.04em] text-[#f1efea]">Lirava</span>
     </span>
   );
 }
@@ -281,7 +281,7 @@ export default function Sidebar() {
             }
           }
         }}
-        className={`fixed inset-y-0 left-0 z-50 flex h-full flex-col bg-paper-3 text-ink transition-[width,transform,opacity] duration-300 ease-[cubic-bezier(0.2,0,0,1)] md:static md:z-auto md:bg-paper-3 ${
+        className={`fixed inset-y-0 left-0 z-50 flex h-full flex-col bg-[#141414] text-[#f1efea] shadow-2xl backdrop-blur-xl transition-[width,min-width,max-width,transform,opacity] duration-300 ease-[cubic-bezier(0.2,0,0,1)] md:static md:z-auto md:bg-[#141414] md:shadow-none md:backdrop-blur-none ${
           drawerOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         } ${
           collapsed
@@ -297,7 +297,7 @@ export default function Sidebar() {
             </Link>
             <button
               type="button"
-              className={`motion-card flex size-8 items-center justify-center rounded-[var(--radius-pill)] text-muted transition-colors hover:bg-paper-2 hover:text-ink ${searching ? "bg-paper-2 text-ink" : ""}`}
+              className={`motion-card flex size-8 items-center justify-center rounded-lg text-foreground/60 transition-colors hover:bg-white/10 hover:text-foreground ${searching ? "bg-[#292928] text-foreground shadow-none" : ""}`}
               onClick={() => (searching ? closeSearch() : setSearching(true))}
               title="Search chats"
               aria-label="Search chats"
@@ -342,7 +342,7 @@ export default function Sidebar() {
 
           <Link
             href={newChatHref}
-            className="mx-2 mb-5 flex h-8 items-center gap-2 rounded-[var(--radius-pill)] bg-accent px-3 text-[14px] font-medium text-accent-ink transition-colors hover:bg-ink hover:text-paper"
+            className="mx-2 mb-5 flex h-8 items-center gap-2 rounded-lg bg-[#353534] px-3 text-[14px] font-medium text-[#f1efea] transition-colors hover:bg-[#41403e]"
           >
             <SquarePen className="size-4" strokeWidth={1.75} />
             New chat
@@ -351,14 +351,14 @@ export default function Sidebar() {
           <nav className="mx-2 mb-6 space-y-1">
             <Link
               href="/matters"
-              className={`flex h-8 items-center gap-3 rounded-[var(--radius-pill)] px-2 text-[14px] transition-colors ${pathname === "/matters" ? "bg-paper-2 text-ink" : "text-muted hover:bg-paper-2 hover:text-ink"}`}
+              className={`flex h-8 items-center gap-3 rounded-lg px-2 text-[14px] transition-colors ${pathname === "/matters" ? "bg-[#292928] text-[#f1efea]" : "text-foreground/80 hover:bg-white/10 hover:text-foreground"}`}
             >
               <FolderKanban className="size-4" strokeWidth={1.75} />
               Cases &amp; Matters
             </Link>
             <Link
               href="/artifacts"
-              className={`flex h-8 items-center gap-3 rounded-[var(--radius-pill)] px-2 text-[14px] transition-colors ${pathname === "/artifacts" ? "bg-paper-2 text-ink" : "text-muted hover:bg-paper-2 hover:text-ink"}`}
+              className={`flex h-8 items-center gap-3 rounded-lg px-2 text-[14px] transition-colors ${pathname === "/artifacts" ? "bg-[#292928] text-[#f1efea]" : "text-foreground/80 hover:bg-white/10 hover:text-foreground"}`}
             >
               <Boxes className="size-4" strokeWidth={1.75} />
               Artifacts

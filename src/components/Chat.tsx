@@ -303,7 +303,7 @@ export default function Chat({ dot, conversation, matterId }: { dot: Dot; conver
         } ${
           isResizingSplit
             ? "transition-none select-none pointer-events-none"
-            : "transition-opacity duration-150"
+            : "transition-all duration-150"
         }`}
       >
         {convId && (
@@ -326,7 +326,7 @@ export default function Chat({ dot, conversation, matterId }: { dot: Dot; conver
 
             {/* Welcome screen on fresh chat */}
             {fresh && (
-            <div className={`${COL} flex min-h-[calc(100dvh-80px)] flex-col items-center justify-center gap-6`}>
+              <div className={`${COL} flex flex-col items-center justify-center gap-6`}>
                 <Welcome dot={dot} onSuggest={fillComposer} />
                 <div className="w-full">
                   <Composer key="new-centered" dot={dot} onSend={send} onStop={stop} submitting={submitting} draft={draft} />
@@ -519,7 +519,7 @@ function Welcome({ dot, onSuggest }: { dot: Dot; onSuggest: (text: string) => vo
           {daypart} · Lirava
         </p>
       </div>
-      <h1 className="max-w-[14ch] font-display text-[clamp(2.5rem,6vw,4.5rem)] leading-[1.04] font-medium tracking-display text-balance text-ink">
+      <h1 className="max-w-[540px] font-serif text-[36px] leading-[1.18] font-normal tracking-[-0.035em] text-balance text-[#f1efea] sm:text-[48px]">
         {greeting}
       </h1>
       {dot.purpose ? (
@@ -544,7 +544,7 @@ function Welcome({ dot, onSuggest }: { dot: Dot; onSuggest: (text: string) => vo
               key={s.id}
               type="button"
               onClick={() => onSuggest(s.template)}
-              className="motion-card group flex items-start gap-3 rounded-[var(--radius-card)] border border-rule bg-paper-2 px-4 py-3.5 text-left transition-colors hover:border-rule-2 hover:bg-paper-3"
+              className="motion-card group flex items-start gap-3 rounded-2xl border border-black/[0.08] bg-card px-4 py-3.5 text-left transition-all hover:border-black/20 hover:bg-popover hover:shadow-[0_8px_24px_-12px_rgba(0,0,0,0.15)]"
             >
               <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-brand/10 text-brand-readable">
                 <Icon className="size-4" strokeWidth={1.75} />
@@ -620,7 +620,7 @@ function Composer({ dot, onSend, onStop, submitting = false, draft = null }: { d
 
   if (dot.status === "paused") {
     return (
-      <div className="surface flex items-center justify-between gap-4 px-4 py-3">
+      <div className="surface flex items-center justify-between gap-4 px-4 py-3 shadow-[0_8px_32px_-12px_rgba(0,0,0,0.15)]">
         <span className="text-[13px] text-foreground/60">
           Lirava is paused. Any ongoing work was stopped, and it won&apos;t message you until you resume it.
         </span>
@@ -638,7 +638,7 @@ function Composer({ dot, onSend, onStop, submitting = false, draft = null }: { d
       onDrop={(e) => { e.preventDefault(); setDragging(false); addFiles([...e.dataTransfer.files]); }}
     >
       <div
-        className={`composer-shell rounded-[var(--radius-card)] border px-4 pt-3 pb-2 transition-colors focus-within:border-accent ${dragging ? "border-accent border-dashed" : "border-rule"}`}
+        className={`composer-shell rounded-2xl border bg-[#292928] px-4 pt-3 pb-2 shadow-[0_2px_8px_rgba(0,0,0,0.3)] backdrop-blur transition-[box-shadow,border-color] focus-within:border-brand/60 focus-within:shadow-[0_8px_32px_-8px_rgba(0,0,0,0.5)] ${dragging ? "border-brand border-dashed" : "border-white/10"}`}
       >
         {uploads.length > 0 && (
           <div className="mb-2 flex flex-wrap gap-1.5 px-1 pt-1">
@@ -683,13 +683,13 @@ function Composer({ dot, onSend, onStop, submitting = false, draft = null }: { d
 
           <div className="ml-auto flex items-center gap-1">
             {submitting && onStop ? (
-              <button type="button" className="motion-card flex size-9 shrink-0 items-center justify-center rounded-full bg-accent text-accent-ink transition-opacity hover:opacity-85" onClick={onStop} aria-label="Stop response" title="Stop response">
+              <button type="button" className="motion-card flex size-9 shrink-0 items-center justify-center rounded-full bg-[#f1efea] text-[#1f1f1e] transition-all hover:opacity-85" onClick={onStop} aria-label="Stop response" title="Stop response">
                 <Square className="size-3.5 fill-current" strokeWidth={2} />
               </button>
             ) : (
               <button
                 type="button"
-                className="motion-card flex size-9 shrink-0 items-center justify-center rounded-full bg-accent text-accent-ink transition-opacity hover:opacity-85 disabled:cursor-not-allowed disabled:opacity-40"
+                className="motion-card flex size-9 shrink-0 items-center justify-center rounded-full bg-foreground text-card transition-all hover:opacity-85 disabled:cursor-not-allowed disabled:bg-black/10 disabled:text-foreground/30"
                 disabled={submitting || pending || busy || (!text.trim() && !ready.length)}
                 onClick={submit}
                 aria-label="Send"
@@ -794,7 +794,7 @@ export function MessageRow({
             </span>
           )}
           {m.text && (
-            <div className="motion-card rounded-[var(--radius-card)] rounded-br-sm bg-accent px-4 py-3 text-[15px] leading-[1.55] tracking-default whitespace-pre-wrap text-accent-ink">
+            <div className="motion-card rounded-2xl rounded-br-sm bg-foreground px-4 py-3 text-[15px] leading-[1.55] tracking-default whitespace-pre-wrap text-card shadow-[0_10px_24px_-16px_rgba(0,0,0,0.55)]">
               {m.text}
             </div>
           )}

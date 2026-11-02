@@ -23,7 +23,7 @@ export default function AppFrame({
     return (
       <main
         className={`min-h-screen w-full flex-1 overflow-y-auto ${
-          isLanding ? "landing-scrollbar bg-paper" : "bg-paper"
+          isLanding ? "landing-scrollbar bg-[#f7f3ea]" : "bg-background"
         }`}
       >
         {children}
@@ -36,7 +36,7 @@ export default function AppFrame({
       <Suspense>
         <Sidebar />
       </Suspense>
-      <main className="app-shell flex min-w-0 flex-1 flex-col bg-paper text-ink">
+      <main className="app-shell flex min-w-0 flex-1 flex-col bg-[#1f1f1e] text-[#f1efea] transition-all duration-300">
         <Suspense>
           <MobileBar />
           <FloatingSidebarTrigger />

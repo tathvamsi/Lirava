@@ -45,7 +45,7 @@ export function FloatingSidebarTrigger() {
       <button
         type="button"
         onClick={() => setSidebarCollapsed(false)}
-        className="flex size-8 items-center justify-center rounded-[var(--radius-pill)] border border-rule bg-paper-2 text-muted transition-colors hover:border-rule-2 hover:text-ink"
+        className="flex size-8 items-center justify-center rounded-lg border border-black/10 bg-card/90 text-foreground/70 shadow-xs backdrop-blur-xs transition-all hover:border-black/25 hover:bg-card hover:text-foreground hover:shadow-sm"
         title="Open sidebar (Ctrl+B)"
         aria-label="Open sidebar"
       >
@@ -53,7 +53,7 @@ export function FloatingSidebarTrigger() {
       </button>
       <Link
         href="/"
-        className="flex size-8 items-center justify-center rounded-[var(--radius-pill)] border border-rule bg-paper-2 text-muted transition-colors hover:border-rule-2 hover:text-ink"
+        className="flex size-8 items-center justify-center rounded-lg border border-black/10 bg-card/90 text-foreground/70 shadow-xs backdrop-blur-xs transition-all hover:border-black/25 hover:bg-card hover:text-foreground hover:shadow-sm"
         title="New chat"
         aria-label="New chat"
       >
@@ -68,7 +68,7 @@ export default function MobileBar() {
   const pathname = usePathname();
   if (pathname.startsWith("/dots/") || pathname.startsWith("/vakil/")) return null;
   return (
-    <div className="flex h-12 shrink-0 items-center gap-2 border-b border-rule px-2 md:hidden">
+    <div className="flex h-12 shrink-0 items-center gap-2 border-b border-black/[0.06] px-2 md:hidden">
       <MenuButton />
       <Link href="/" className="mr-auto">
         <Wordmark />

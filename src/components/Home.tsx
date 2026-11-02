@@ -17,7 +17,7 @@ export default function Home() {
     return (
       <div className="flex-1 overflow-y-auto">
         <div className="rails animate-page-rise mx-auto flex min-h-full max-w-[880px] flex-col items-center justify-center px-4 py-16 text-center sm:px-8">
-          <p className="text-muted">Start a new conversation from the sidebar.</p>
+          <p className="text-foreground/60">Start a new conversation from the sidebar.</p>
         </div>
       </div>
     );
@@ -41,12 +41,12 @@ export default function Home() {
   return (
     <div className="flex-1 overflow-y-auto">
       <div className="rails animate-page-rise mx-auto max-w-[880px] px-4 sm:px-8">
-        <section className="flex min-h-[calc(100dvh-56px)] flex-col items-center justify-center text-center">
-          <h1 className="mb-9 max-w-[14ch] font-display text-[clamp(2.5rem,6vw,4.5rem)] font-medium tracking-display text-ink">
-            What shall we think through?
+        <section className="flex min-h-[calc(100dvh-56px)] -translate-y-10 flex-col items-center justify-center text-center">
+          <h1 className="mb-9 font-serif text-[38px] font-normal tracking-[-0.04em] text-[#f1efea] sm:text-[48px]">
+            Welcome back.
           </h1>
           <div className="w-full max-w-[640px] text-left">
-            <div className="composer-shell rounded-[var(--radius-card)] border px-4 pt-3 pb-2 transition-colors focus-within:border-accent">
+            <div className="composer-shell rounded-2xl border border-white/15 bg-card px-4 pt-3 pb-2 shadow-[0_18px_42px_-24px_rgba(0,0,0,0.8)] transition-shadow focus-within:border-brand/60">
               <textarea
                 autoFocus
                 rows={1}
@@ -63,7 +63,7 @@ export default function Home() {
               />
               <div className="flex items-center gap-2 pb-1">
                 <button
-                  className="motion-card ml-auto flex size-9 shrink-0 items-center justify-center rounded-full bg-accent text-accent-ink transition-opacity hover:opacity-85 disabled:cursor-not-allowed disabled:opacity-40"
+                  className="motion-card ml-auto flex size-9 shrink-0 items-center justify-center rounded-full bg-foreground text-card transition-opacity hover:opacity-85 disabled:cursor-not-allowed disabled:bg-black/10 disabled:text-foreground/30"
                   disabled={pending || !text.trim()}
                   onClick={submit}
                   aria-label="Send"
