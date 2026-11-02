@@ -1,4 +1,10 @@
+/* Hallmark · shape: app screen and product page · genre: modern-minimal · theme: Console (deal 1/3, seed lirava-legal-workspace-indian-62e7·f9641a68·2026-11-02·r0)
+ * nav: compact workbench rail · signature: source trail · states: loading, empty, error, full · console: graphite
+ * axes: dark/grotesk-sans/chromatic-amber · posture: restrained · contrast: pass · v2.0.0 */
+/* Hallmark · pre-emit critique: P4 H4 E3 S5 R4 V4 · weakest: E, replaced the repeated card grid with panels and a source trail */
 @import "tailwindcss";
+@import "./tokens.css";
+@import "./base.css" layer(base);
 @plugin "@tailwindcss/typography";
 
 /*
@@ -1009,6 +1015,64 @@ body {
   color: #f1efea;
 }
 
+/* Hallmark Console redesign: shared surfaces for the marketing page and workbench. */
+.app-shell,
+.app-shell main,
+.app-shell .bg-\[\#1f1f1e\] { background: var(--color-paper) !important; color: var(--color-ink) !important; }
+.app-shell .bg-\[\#141414\] { background: var(--color-paper-3) !important; }
+.app-shell .bg-\[\#292928\],
+.app-shell .bg-\[\#252524\],
+.app-shell .bg-\[\#353534\] { background: var(--color-paper-2) !important; }
+.app-shell [class*="border-white"],
+.app-shell [class*="border-black"] { border-color: var(--color-rule) !important; }
+.app-shell [class*="text-\[\#f1efea\]"],
+.app-shell [class*="text-foreground"] { color: var(--color-ink-2); }
+.app-shell .composer-shell { background: var(--color-paper-3) !important; border-color: var(--color-rule-2) !important; box-shadow: none !important; }
+.app-shell .motion-card:hover { background: var(--color-paper-2) !important; border-color: var(--color-rule-2) !important; box-shadow: none !important; transform: none; }
+.app-shell .motion-card:active { transform: translateY(1px); }
+.app-shell .btn,
+.app-shell .btn-quiet,
+.app-shell button,
+.app-shell a { transition-property: color, background-color, border-color, opacity; transition-duration: var(--dur-short); transition-timing-function: var(--ease-out); }
+.app-shell input,
+.app-shell textarea,
+.app-shell select { background: var(--color-paper-3) !important; border-color: var(--color-rule) !important; color: var(--color-ink) !important; }
+.app-shell h1,
+.app-shell h2,
+.app-shell h3 { font-family: var(--font-display); font-weight: var(--display-weight); }
+
+.lirava-marketing { background: var(--color-paper); color: var(--color-ink); }
+.lirava-marketing .panels { display: grid; gap: var(--rule-hair); background: var(--color-rule); border: var(--rule-hair) solid var(--color-rule); border-radius: var(--radius-card); }
+.lirava-marketing .panels > * { min-width: 0; }
+.lirava-marketing .btn,
+.app-shell .btn { display: inline-flex; min-height: 40px; align-items: center; justify-content: center; gap: var(--space-xs); border: 1px solid var(--color-rule-2); border-radius: var(--radius-pill); padding: var(--space-xs) var(--space-md); background: var(--color-paper-2); color: var(--color-ink); font-family: var(--font-body); font-size: var(--text-sm); font-weight: 500; }
+.lirava-marketing .btn:hover,
+.app-shell .btn:hover { border-color: var(--color-accent); color: var(--color-accent); }
+.lirava-marketing .btn-primary,
+.app-shell .btn-primary { border-color: var(--color-accent); background: var(--color-accent); color: var(--color-accent-ink); }
+.lirava-marketing .btn-primary:hover,
+.app-shell .btn-primary:hover { background: var(--color-ink); color: var(--color-paper); }
+.lirava-marketing .chip { display: inline-flex; align-items: center; border: 1px solid var(--color-rule-2); border-radius: var(--radius-pill); padding: 4px 8px; color: var(--color-muted); font-size: var(--text-xs); }
+.lirava-marketing .chip-cool { border-color: var(--color-cool); color: var(--color-cool); background: var(--color-cool-soft); }
+.lirava-marketing .field,
+.app-shell .field { min-height: 40px; width: 100%; border: 1px solid var(--color-rule); border-radius: var(--radius-pill); padding: 8px 12px; background: var(--color-paper-3) !important; color: var(--color-ink) !important; outline: none; }
+.lirava-marketing .field:focus,
+.app-shell .field:focus { border-color: var(--color-focus) !important; outline: 2px solid var(--color-focus); outline-offset: 2px; }
+.lirava-marketing h1 { max-width: 12ch; font-size: clamp(3.5rem, 7vw, 7rem); line-height: 1.02; }
+.lirava-marketing h2 { font-size: clamp(2.4rem, 4vw, 3.25rem); line-height: 1.05; }
+.lirava-marketing h3 { font-size: 1.5rem; }
+.lirava-marketing .lead { max-width: 52ch; color: var(--color-ink-2); font-size: 1.25rem; line-height: 1.5; }
+.lirava-marketing a:focus-visible,
+.lirava-marketing button:focus-visible,
+.lirava-marketing input:focus-visible,
+.lirava-marketing select:focus-visible,
+.lirava-marketing summary:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 3px; }
+
+@media (max-width: 60rem) {
+  .lirava-marketing h1 { font-size: clamp(3.25rem, 12vw, 5.5rem); }
+  .lirava-marketing h2 { font-size: clamp(2.2rem, 8vw, 3.25rem); }
+}
+
 .app-shell .bg-white {
   background-color: #1f1f1e !important;
 }
@@ -1127,3 +1191,39 @@ main.app-shell .composer-shell textarea::placeholder {
 .soli-chat-scrollbar::-webkit-scrollbar-thumb:active {
   background-color: rgba(241, 239, 234, 0.56);
 }
+
+/* Console finish: keep the existing workspace wiring, remove the old product skin. */
+:root {
+  --background: var(--color-paper);
+  --card: var(--color-paper-2);
+  --popover: var(--color-paper-2);
+  --foreground: var(--color-ink);
+  --brand: var(--color-accent);
+  --brand-hover: var(--color-ink);
+  --brand-active: var(--color-accent-soft);
+  --brand-readable: var(--color-accent);
+  --highlight: var(--color-paper-3);
+  --highlight-foreground: var(--color-ink);
+  --border: var(--color-rule);
+  --ring: var(--color-focus);
+}
+
+body { background: var(--color-paper); color: var(--color-ink); }
+main.app-shell { background: var(--color-paper) !important; color: var(--color-ink) !important; }
+aside[class*="bg-[#141414]"], aside[class*="bg-[#f7f7f8]"] { background: var(--color-paper-3) !important; border-color: var(--color-rule) !important; color: var(--color-ink); }
+aside a:hover, aside button:hover { background: var(--color-paper-2) !important; }
+.composer-shell { background: var(--color-paper-2) !important; border-color: var(--color-rule-2) !important; box-shadow: none !important; }
+.surface { background: var(--color-paper-2); border-color: var(--color-rule); box-shadow: none; }
+.app-shell .bg-card, .app-shell .bg-popover { background-color: var(--color-paper-2) !important; }
+.app-shell .bg-foreground { background-color: var(--color-accent) !important; }
+.app-shell .text-card { color: var(--color-accent-ink) !important; }
+.app-shell [class*="border-black"], .app-shell [class*="border-white"] { border-color: var(--color-rule) !important; }
+.app-shell [class*="text-[#f1efea]"], .app-shell [class*="text-foreground"] { color: var(--color-ink-2); }
+.app-shell [class*="bg-black/"] { background-color: var(--color-paper-3) !important; }
+.app-shell .btn-primary, .app-shell .btn-brand { background: var(--color-accent); color: var(--color-accent-ink); border-color: var(--color-accent); }
+.app-shell .btn-primary:hover, .app-shell .btn-brand:hover { background: var(--color-ink); color: var(--color-paper); }
+.app-shell button, .app-shell a { transition-property: color, background-color, border-color, opacity; transition-duration: var(--dur-short); transition-timing-function: var(--ease-out); }
+.app-shell [class*="transition-all"] { transition-property: color, background-color, border-color, opacity; }
+.app-shell .motion-card:hover { transform: none; box-shadow: none; }
+.soli-chat-scrollbar { scrollbar-color: var(--color-rule-2) transparent; }
+.soli-chat-scrollbar::-webkit-scrollbar-thumb { background: var(--color-rule-2); background-clip: padding-box; }
