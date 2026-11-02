@@ -7,7 +7,7 @@ import { LoginForm } from "@/components/auth/login-form";
 
 export const metadata: Metadata = {
   title: "Log in",
-  description: "Log in to Soli.",
+  description: "Log in to Lirava.",
 };
 
 const HIGHLIGHTS = [
@@ -30,7 +30,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   return (
     <main className="min-h-screen bg-[#121212] text-[#f1efea]">
       <div className="mx-auto grid min-h-screen w-full max-w-[1320px] lg:grid-cols-[1.08fr_0.92fr]">
-        <section aria-label="About Soli" className="relative hidden overflow-hidden border-x border-white/10 bg-[#211f1c] lg:flex lg:flex-col lg:justify-between lg:p-12">
+        <section aria-label="About Lirava" className="relative hidden overflow-hidden border-x border-white/10 bg-[#211f1c] lg:flex lg:flex-col lg:justify-between lg:p-12">
           <div aria-hidden className="dot-grid absolute inset-0 opacity-[0.08] invert" />
           <div aria-hidden className="absolute -top-32 -left-32 size-96 rounded-full bg-brand/25 blur-[110px]" />
           <div aria-hidden className="absolute -right-24 -bottom-24 size-80 rounded-full bg-brand/15 blur-[100px]" />
@@ -38,7 +38,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
           <div className="relative">
             <Link href="/" className="inline-flex items-center gap-2.5">
               <span className="grid size-9 place-items-center rounded-lg bg-brand text-[#211f1c]"><Scale className="size-[18px]" strokeWidth={2.25} /></span>
-              <span className="font-serif text-[22px] font-medium tracking-[-0.04em]">Soli</span>
+              <span className="font-serif text-[22px] font-medium tracking-[-0.04em]">Lirava</span>
               <span className="rounded-full border border-white/15 px-2 py-0.5 font-mono text-[10px] tracking-wider text-white/55 uppercase">Legal workspace</span>
             </Link>
 
@@ -77,10 +77,10 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
           <div aria-hidden className="dot-grid absolute inset-x-0 top-0 h-44 opacity-[0.08] [mask-image:linear-gradient(to_bottom,black,transparent)]" />
           <Link href="/" className="relative mb-8 inline-flex items-center gap-2.5 lg:hidden">
             <span className="grid size-9 place-items-center rounded-lg bg-brand text-[#211f1c]"><Scale className="size-[18px]" strokeWidth={2.25} /></span>
-            <span className="font-serif text-[22px] font-medium tracking-[-0.04em]">Soli</span>
+            <span className="font-serif text-[22px] font-medium tracking-[-0.04em]">Lirava</span>
           </Link>
           <div className="relative mx-auto w-full max-w-[420px]">
-            <p className="mb-5 font-mono text-[11px] tracking-wider text-[#db7a5c] uppercase">Soli legal workspace</p>
+            <p className="mb-5 font-mono text-[11px] tracking-wider text-[#db7a5c] uppercase">Lirava legal workspace</p>
             <LoginForm next={next} />
             <p className="mt-6 text-center font-mono text-[11px] text-white/35">Protected by account-scoped sessions</p>
           </div>

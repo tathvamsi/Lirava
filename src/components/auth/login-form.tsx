@@ -59,7 +59,7 @@ export function LoginForm({ next }: { next?: string }) {
   return (
     <div className="animate-auth-rise rounded-2xl border border-white/10 bg-[#222220] p-7 shadow-[0_24px_70px_-28px_rgba(0,0,0,0.8)] sm:p-8">
       <p className="font-mono text-[11px] tracking-wider text-[#db7a5c] uppercase">Welcome back</p>
-      <h2 className="mt-3 font-serif text-[32px] leading-none tracking-[-0.04em] text-[#f1efea]">Log in to Soli</h2>
+      <h2 className="mt-3 font-serif text-[32px] leading-none tracking-[-0.04em] text-[#f1efea]">Log in to Lirava</h2>
       <p className="mt-3 text-[14px] leading-relaxed text-white/55">
         Access your matters, research, and legal documents.
       </p>
@@ -174,7 +174,7 @@ export function LoginForm({ next }: { next?: string }) {
       <div className="my-6 flex items-center gap-3" aria-hidden>
         <span className="h-px flex-1 bg-black/[0.08]" />
         <span className="font-mono text-[11px] tracking-wider text-foreground/40 uppercase">
-          New to Soli?
+          New to Lirava?
         </span>
         <span className="h-px flex-1 bg-black/[0.08]" />
       </div>

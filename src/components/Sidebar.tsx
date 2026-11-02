@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, useTransition, type ReactNode } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Archive, ArchiveRestore, Boxes, ChevronDown, ChevronRight, ChevronsUpDown, Ellipsis, FolderKanban, Globe, Keyboard, LayoutGrid, Link2, LogOut, Palette, PanelLeftClose, Pencil, Pin, PinOff, Puzzle, Search, Settings, ShieldCheck, SlidersHorizontal, SquarePen, Trash2, Upload, X } from "lucide-react";
+import { Archive, ArchiveRestore, Boxes, ChevronDown, ChevronRight, ChevronsUpDown, Ellipsis, FolderKanban, Globe, Keyboard, LayoutGrid, LogOut, Palette, PanelLeftClose, Pencil, Pin, PinOff, Search, Settings, ShieldCheck, SquarePen, Trash2, Upload, X } from "lucide-react";
 import { backfillConversationTitles, deleteConversation, listMatters, moveConversationToMatter, renameConversation } from "@/app/actions";
 import { LogoutButton } from "@/components/auth/logout-button";
 import { deleteConversationLocally, markRead, renameConversationLocally, updateConversationMatterLocally, useStore } from "@/lib/store";
@@ -16,7 +16,7 @@ export function Wordmark() {
   return (
     <span className="flex items-center gap-2.5">
       <span className="flex size-6 items-center justify-center rounded-[8px] bg-[#292928] text-[12px] font-semibold text-[#f1efea] shadow-sm">S</span>
-      <span className="font-serif text-[20px] font-medium tracking-[-0.04em] text-[#f1efea]">Soli</span>
+      <span className="font-serif text-[20px] font-medium tracking-[-0.04em] text-[#f1efea]">Lirava</span>
     </span>
   );
 }
@@ -265,7 +265,7 @@ export default function Sidebar() {
   };
 
   const closeSearch = () => (setSearching(false), setQ(""));
-  const displayName = user?.name || "Soli user";
+  const displayName = user?.name || "Lirava user";
   const initials = displayName.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase();
 
   return (
@@ -362,27 +362,6 @@ export default function Sidebar() {
             >
               <Boxes className="size-4" strokeWidth={1.75} />
               Artifacts
-            </Link>
-            <Link
-              href="/customize"
-              className={`flex h-8 items-center gap-3 rounded-lg px-2 text-[14px] transition-colors ${pathname === "/customize" ? "bg-[#292928] text-[#f1efea]" : "text-foreground/80 hover:bg-white/10 hover:text-foreground"}`}
-            >
-              <SlidersHorizontal className="size-4" strokeWidth={1.75} />
-              Customize
-            </Link>
-            <Link
-              href="/settings/connectors"
-              className={`flex h-8 items-center gap-3 rounded-lg px-2 text-[14px] transition-colors ${pathname === "/settings/connectors" ? "bg-[#292928] text-[#f1efea]" : "text-foreground/80 hover:bg-white/10 hover:text-foreground"}`}
-            >
-              <Link2 className="size-4" strokeWidth={1.75} />
-              Connections
-            </Link>
-            <Link
-              href="/settings/plugins"
-              className={`flex h-8 items-center gap-3 rounded-lg px-2 text-[14px] transition-colors ${pathname === "/settings/plugins" ? "bg-[#292928] text-[#f1efea]" : "text-foreground/80 hover:bg-white/10 hover:text-foreground"}`}
-            >
-              <Puzzle className="size-4" strokeWidth={1.75} />
-              Plugins
             </Link>
           </nav>
 
@@ -581,7 +560,7 @@ export default function Sidebar() {
               <div role="menu" aria-label="Account menu" className="absolute right-2 bottom-[68px] z-50 w-[264px] overflow-hidden rounded-xl border border-white/10 bg-[#252524] py-2 text-[#f1efea] shadow-[0_16px_48px_-8px_rgba(0,0,0,0.65)] animate-page-rise">
                 <div className="px-3 py-2.5">
                   <p className="truncate text-[13px] font-medium">{displayName}</p>
-                  <p className="truncate pt-0.5 text-[12px] text-foreground/55">{user?.email || "Signed in to Soli"}</p>
+                  <p className="truncate pt-0.5 text-[12px] text-foreground/55">{user?.email || "Signed in to Lirava"}</p>
                 </div>
                 <div className="mx-3 my-1 h-px bg-white/10" />
                 <Link role="menuitem" href="/settings" onClick={() => setProfileOpen(false)} className="flex items-center gap-3 px-3 py-2 text-[14px] hover:bg-white/10"><Settings className="size-4" />Settings</Link>

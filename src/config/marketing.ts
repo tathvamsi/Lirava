@@ -1,5 +1,5 @@
 export const marketing = {
-  name: "Soli",
+  name: "Lirava",
   tagline: "Counsel, meet your tireless paralegal.",
   contactEmail: "hello@soli.legal",
   navigation: [

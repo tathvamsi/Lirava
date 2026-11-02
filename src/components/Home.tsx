@@ -58,7 +58,7 @@ export default function Home() {
                     submit();
                   }
                 }}
-                placeholder={target ? "Message Soli…" : "Loading…"}
+                placeholder={target ? "Message Lirava…" : "Loading…"}
                 className="max-h-60 min-h-[48px] w-full resize-none bg-transparent px-1 py-2 text-[16px] leading-[1.5] tracking-default outline-none [field-sizing:content] placeholder:text-foreground/35"
               />
               <div className="flex items-center gap-2 pb-1">

@@ -12,8 +12,8 @@ const inter = Inter({ variable: "--font-inter", subsets: ["latin"], display: "sw
 const sourceSerif = Source_Serif_4({ variable: "--font-source-serif", subsets: ["latin"], weight: ["400"], display: "swap" });
 
 export const metadata: Metadata = {
-  title: "Soli — AI legal work for Indian litigation teams",
-  description: "Soli researches Indian law, reads case files, and answers with pinpoint citations for legal professionals.",
+  title: "Lirava — AI legal work for Indian litigation teams",
+  description: "Lirava researches Indian law, reads case files, and answers with pinpoint citations for legal professionals.",
 };
 
 export const viewport = {

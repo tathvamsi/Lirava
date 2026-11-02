@@ -67,7 +67,7 @@ export function SignupForm() {
       <p className="eyebrow">Get started</p>
       <h2 className="text-h1 mt-2">Create your account</h2>
       <p className="text-body-sm mt-1.5 text-foreground/55">
-        Join Soli to build your law firm&apos;s legal AI workspace.
+        Join Lirava to build your law firm&apos;s legal AI workspace.
       </p>
       <form onSubmit={onSubmit} className="mt-6 flex flex-col gap-4">
         <div>

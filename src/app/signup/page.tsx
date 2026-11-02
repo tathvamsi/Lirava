@@ -7,7 +7,7 @@ import { SignupForm } from "@/components/auth/signup-form";
 
 export const metadata: Metadata = {
   title: "Sign up",
-  description: "Create a Soli account.",
+  description: "Create a Lirava account.",
 };
 
 const HIGHLIGHTS = [
@@ -38,7 +38,7 @@ export default async function SignupPage() {
       <div className="mx-auto grid min-h-screen w-full max-w-6xl lg:grid-cols-[1.05fr_1fr]">
         {/* ── Brand panel ─────────────────────────────────────────── */}
         <section
-          aria-label="About Soli"
+          aria-label="About Lirava"
           className="relative hidden overflow-hidden border-x border-black/[0.06] bg-foreground text-card lg:flex lg:flex-col lg:justify-between lg:p-10"
         >
           <div
@@ -60,7 +60,7 @@ export default async function SignupPage() {
                 <Scale className="size-[18px]" strokeWidth={2.25} />
               </span>
               <span className="font-sans text-[17px] font-medium tracking-tight">
-                Soli
+                Lirava
               </span>
               <span className="rounded-full border border-card/20 px-2 py-0.5 font-mono text-[10px] tracking-wider text-card/60 uppercase">
                 Legal AI
@@ -122,7 +122,7 @@ export default async function SignupPage() {
               <Scale className="size-[18px]" strokeWidth={2.25} />
             </span>
             <span className="font-sans text-[17px] font-medium tracking-tight">
-              Soli
+              Lirava
             </span>
           </Link>
 

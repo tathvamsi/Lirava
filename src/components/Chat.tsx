@@ -516,7 +516,7 @@ function Welcome({ dot, onSuggest }: { dot: Dot; onSuggest: (text: string) => vo
     <div className="flex flex-col items-center px-2 pt-10 pb-4 text-center sm:pt-16 animate-page-rise">
       <div className="hidden">
         <p className="font-mono text-[11px] tracking-widest text-foreground/40 uppercase">
-          {daypart} · Soli
+          {daypart} · Lirava
         </p>
       </div>
       <h1 className="max-w-[540px] font-serif text-[36px] leading-[1.18] font-normal tracking-[-0.035em] text-balance text-[#f1efea] sm:text-[48px]">
@@ -622,7 +622,7 @@ function Composer({ dot, onSend, onStop, submitting = false, draft = null }: { d
     return (
       <div className="surface flex items-center justify-between gap-4 px-4 py-3 shadow-[0_8px_32px_-12px_rgba(0,0,0,0.15)]">
         <span className="text-[13px] text-foreground/60">
-          Soli is paused. Any ongoing work was stopped, and it won&apos;t message you until you resume it.
+          Lirava is paused. Any ongoing work was stopped, and it won&apos;t message you until you resume it.
         </span>
         <button className="btn-primary h-8 shrink-0 px-3 text-[13px]" onClick={() => start(() => resumeDot(dot.id))}>
           Resume
@@ -663,12 +663,12 @@ function Composer({ dot, onSend, onStop, submitting = false, draft = null }: { d
           ref={textareaRef}
           rows={1}
           autoFocus
-          aria-label="Message Soli"
+          aria-label="Message Lirava"
           value={text}
           onChange={(e) => setText(e.target.value)}
           onPaste={(e) => { const pasted = [...e.clipboardData.files]; if (pasted.length) { e.preventDefault(); addFiles(pasted); } }}
           onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); submit(); } }}
-          placeholder={dragging ? "Drop files to attach" : "Message Soli…"}
+          placeholder={dragging ? "Drop files to attach" : "Message Lirava…"}
           className="max-h-52 min-h-[44px] w-full resize-none bg-transparent px-1 py-2 text-[16px] leading-[1.5] tracking-default outline-none [field-sizing:content] placeholder:text-[#8e8e8e]"
         />
 
@@ -702,7 +702,7 @@ function Composer({ dot, onSend, onStop, submitting = false, draft = null }: { d
         </div>
       </div>
       <p className="mt-2 text-center text-[12px] text-foreground/35">
-        Soli can make mistakes. Check important info.
+        Lirava can make mistakes. Check important info.
       </p>
     </div>
   );
@@ -811,7 +811,7 @@ export function MessageRow({
     return (
       <div className="motion-line flex min-w-0 items-center gap-2 rounded-full bg-card/55 px-2.5 py-1 text-foreground/40">
         <Icon className="size-3.5 shrink-0" strokeWidth={1.5} />
-        {showName && <span className="shrink-0 text-[12px] text-foreground/55">Soli</span>}
+        {showName && <span className="shrink-0 text-[12px] text-foreground/55">Lirava</span>}
         <span className="shrink-0 font-mono text-[11px] tracking-wide whitespace-nowrap uppercase">{label}</span>
         {rest.length > 0 && <span className="truncate font-mono text-[11px] text-foreground/30">{rest.join(" · ")}</span>}
       </div>
@@ -853,7 +853,7 @@ export function MessageRow({
     <div className="animate-message-rise">
       <div className="min-w-0 pt-0.5">
         {showName && (
-          <div className="mb-1 text-[13px] font-medium text-foreground/70">Soli</div>
+          <div className="mb-1 text-[13px] font-medium text-foreground/70">Lirava</div>
         )}
         {m.title && (
           <div className="mb-2 inline-flex items-center gap-1.5 rounded-sm bg-highlight px-1.5 py-0.5 font-mono text-[10px] tracking-wider text-highlight-foreground uppercase">

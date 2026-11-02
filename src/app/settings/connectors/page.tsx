@@ -1,7 +1,7 @@
-import ConnectorsSettings from "@/components/ConnectorsSettings";
+import { redirect } from "next/navigation";
 
 export const metadata = { title: "Connectors · Soli" };
 
 export default function ConnectorsPage() {
-  return <ConnectorsSettings />;
+  redirect("/");
 }
