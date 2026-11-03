@@ -1,0 +1,62 @@
+[
+ {
+  "mode": "redesign",
+  "depth": "restyle",
+  "scope": "site",
+  "theme": "coral",
+  "shape": "kept",
+  "axes": [
+   "warm-paper",
+   "ink-board",
+   "coral-signal"
+  ],
+  "hero": "warm felt desk with product UI",
+  "nav": "cotton stock",
+  "footer": "ink board",
+  "imagery": "product UI",
+  "photos": [],
+  "entry": "2026-11-03 Coral restyle",
+  "fingerprint": "lirava-coral-modern-minimal-restyle",
+  "sections": [
+   "marketing",
+   "auth",
+   "chat",
+   "workspace",
+   "admin"
+  ],
+  "signature": "cotton stock and ink letterpress controls",
+  "waived": [
+   "before render screenshots unavailable"
+  ],
+  "prompt": "A source-aware legal workspace for Indian litigation teams",
+  "date": "2026-11-03"
+ },
+ {
+  "mode": "redesign",
+  "depth": "polish",
+  "scope": "site",
+  "theme": "project",
+  "shape": "kept",
+  "axes": [
+   "modern-minimal"
+  ],
+  "hero": "kept",
+  "nav": "kept",
+  "footer": "kept",
+  "imagery": "product UI",
+  "photos": [],
+  "entry": "2026-11-03 Hallmark polish",
+  "fingerprint": "lirava-modern-minimal-polish",
+  "sections": [
+   "marketing",
+   "auth",
+   "chat",
+   "matters",
+   "artifacts"
+  ],
+  "signature": "source-aware product preview",
+  "waived": [],
+  "prompt": "Remove Hallmark floor failures and generated UI tells while preserving the platform layout and light theme",
+  "date": "2026-11-03"
+ }
+]

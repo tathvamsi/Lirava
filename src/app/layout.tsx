@@ -1,15 +1,12 @@
 import type { Metadata } from "next";
-import { Fraunces, Inter, Source_Serif_4 } from "next/font/google";
-import localFont from "next/font/local";
+import { DM_Serif_Display, Inter, JetBrains_Mono } from "next/font/google";
 import { getSessionUser } from "@/lib/auth";
 import AppFrame from "@/components/AppFrame";
 import "./globals.css";
 
-// Typography stack: Geist Sans + Claude literary serif (Newsreader) + JetBrains Mono.
-const geistSans = localFont({ src: "../fonts/Geist-Variable.woff2", weight: "100 900", variable: "--font-geist-sans" });
-const fraunces = Fraunces({ variable: "--font-fraunces", subsets: ["latin"], axes: ["SOFT"], display: "swap" });
+const display = DM_Serif_Display({ variable: "--font-dm-serif", subsets: ["latin"], weight: "400", display: "swap" });
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"], display: "swap" });
-const sourceSerif = Source_Serif_4({ variable: "--font-source-serif", subsets: ["latin"], weight: ["400"], display: "swap" });
+const mono = JetBrains_Mono({ variable: "--font-jetbrains-mono", subsets: ["latin"], display: "swap" });
 
 export const metadata: Metadata = {
   title: "Lirava — AI legal work for Indian litigation teams",
@@ -20,13 +17,17 @@ export const viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover" as const,
-  themeColor: "#183250",
+  themeColor: "#f8f5f1",
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const user = await getSessionUser();
   return (
-    <html lang="en" className={`${geistSans.variable} ${fraunces.variable} ${inter.variable} ${sourceSerif.variable} h-full`}>
+    <html lang="en" className={`${display.variable} ${inter.variable} ${mono.variable} h-full`}>
+      <head>
+        <link rel="preconnect" href="https://api.fontshare.com" />
+        <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600&display=swap" />
+      </head>
       <body className="flex h-full overflow-hidden">
         <AppFrame hasUser={Boolean(user)}>{children}</AppFrame>
       </body>

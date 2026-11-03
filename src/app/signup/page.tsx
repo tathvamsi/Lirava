@@ -35,23 +35,15 @@ export default async function SignupPage() {
   }
   return (
     <main className="min-h-screen bg-background">
-      <div className="mx-auto grid min-h-screen w-full max-w-6xl lg:grid-cols-[1.05fr_1fr]">
+      <div className="mx-auto grid min-h-screen w-full max-w-[1320px] lg:grid-cols-[1.08fr_0.92fr]">
         {/* ── Brand panel ─────────────────────────────────────────── */}
         <section
           aria-label="About Lirava"
-          className="relative hidden overflow-hidden border-x border-black/[0.06] bg-foreground text-card lg:flex lg:flex-col lg:justify-between lg:p-10"
+          className="relative hidden overflow-hidden border-x border-border bg-background text-foreground lg:flex lg:flex-col lg:justify-between lg:p-12"
         >
           <div
             aria-hidden
             className="dot-grid absolute inset-0 opacity-[0.16] invert"
-          />
-          <div
-            aria-hidden
-            className="absolute -top-32 -left-32 size-96 rounded-full bg-brand/30 blur-[110px]"
-          />
-          <div
-            aria-hidden
-            className="absolute -right-24 -bottom-24 size-80 rounded-full bg-brand/20 blur-[100px]"
           />
 
           <div className="relative">
@@ -59,39 +51,35 @@ export default async function SignupPage() {
               <span className="grid size-9 place-items-center rounded-lg bg-brand text-card">
                 <Scale className="size-[18px]" strokeWidth={2.25} />
               </span>
-              <span className="font-sans text-[17px] font-medium tracking-tight">
+              <span className="font-serif text-[22px] font-semibold tracking-tight">
                 Lirava
               </span>
-              <span className="rounded-full border border-card/20 px-2 py-0.5 font-mono text-[10px] tracking-wider text-card/60 uppercase">
-                Legal AI
+              <span className="rounded-full border border-border px-2 py-0.5 text-[11px] text-muted">
+                Legal workspace
               </span>
             </Link>
 
-            <p className="mt-10 font-mono text-[11px] tracking-wider text-card/50 uppercase">
-              Matters · Research · Assistants
-            </p>
-            <h1 className="mt-3 max-w-md font-sans text-4xl leading-[1.05] font-normal tracking-tight text-balance xl:text-[44px]">
-              Set up your firm&apos;s legal AI workspace.
+            <h1 className="mt-10 max-w-lg font-serif text-4xl leading-[1.05] font-semibold tracking-tight text-balance xl:text-[58px]">
+              Set up your firm&apos;s legal workspace.
             </h1>
-            <p className="mt-4 max-w-md font-sans text-[15px] leading-relaxed text-card/65">
-              One account, every matter — memos, diligence, and research that
-              cites its sources.
+            <p className="mt-4 max-w-md font-sans text-[15px] leading-relaxed text-muted">
+              Keep every matter, memo, and source in one account.
             </p>
 
             <ul className="mt-8 flex flex-col gap-2.5">
               {HIGHLIGHTS.map((item) => (
                 <li
                   key={item.title}
-                  className="flex items-start gap-3 rounded-xl border border-card/10 bg-card/[0.04] p-3.5 backdrop-blur-sm"
+                  className="flex items-start gap-3 rounded-xl border border-border bg-card p-3.5 backdrop-blur-sm"
                 >
-                  <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-brand/15 text-brand">
+                  <span className="grid size-9 shrink-0 place-items-center text-brand">
                     <item.icon className="size-[18px]" strokeWidth={2} />
                   </span>
                   <span>
-                    <span className="block font-sans text-[14px] font-medium text-card">
+                    <span className="block font-sans text-[14px] font-medium text-foreground">
                       {item.title}
                     </span>
-                    <span className="mt-0.5 block font-sans text-[13px] leading-relaxed text-card/60">
+                    <span className="mt-0.5 block font-sans text-[13px] leading-relaxed text-muted">
                       {item.body}
                     </span>
                   </span>
@@ -100,36 +88,36 @@ export default async function SignupPage() {
             </ul>
           </div>
 
-          <p className="relative mt-10 font-mono text-[11px] text-card/40">
-            Attorney work product — kept private to your account.
+          <p className="relative mt-10 text-[12px] text-muted">
+            Attorney work product, kept private to your account.
           </p>
         </section>
 
         {/* ── Form column ─────────────────────────────────────────── */}
         <section
           aria-label="Sign up"
-          className="relative flex flex-col justify-center px-5 py-10 sm:px-10 lg:px-14"
+          className="relative flex flex-col justify-center bg-card px-5 py-10 sm:px-10 lg:px-16"
         >
           <div
             aria-hidden
-            className="dot-grid absolute inset-x-0 top-0 h-44 [mask-image:linear-gradient(to_bottom,black,transparent)]"
+            className="dot-grid absolute inset-x-0 top-0 h-44 opacity-[0.08] [mask-image:linear-gradient(to_bottom,black,transparent)]"
           />
           <Link
             href="/"
             className="relative mb-8 inline-flex items-center gap-2.5 lg:hidden"
           >
-            <span className="grid size-9 place-items-center rounded-lg bg-foreground text-card">
+            <span className="grid size-9 place-items-center rounded-lg bg-brand text-background">
               <Scale className="size-[18px]" strokeWidth={2.25} />
             </span>
-            <span className="font-sans text-[17px] font-medium tracking-tight">
+            <span className="font-serif text-[22px] font-semibold tracking-tight">
               Lirava
             </span>
           </Link>
 
           <div className="relative mx-auto w-full max-w-[420px]">
             <SignupForm />
-            <p className="mt-6 text-center font-mono text-[11px] text-foreground/40">
-              Protected by account-scoped sessions · SOC 2 practices
+            <p className="mt-6 text-center text-[12px] text-muted">
+            Protected by account-scoped sessions and SOC 2 practices
             </p>
           </div>
         </section>

@@ -64,9 +64,8 @@ export function SignupForm() {
 
   return (
     <div className="surface shadow-elevated animate-auth-rise p-7 sm:p-8">
-      <p className="eyebrow">Get started</p>
-      <h2 className="text-h1 mt-2">Create your account</h2>
-      <p className="text-body-sm mt-1.5 text-foreground/55">
+      <h2 className="text-h1">Create your account</h2>
+      <p className="text-body-sm mt-1.5 text-muted">
         Join Lirava to build your law firm&apos;s legal AI workspace.
       </p>
       <form onSubmit={onSubmit} className="mt-6 flex flex-col gap-4">
@@ -80,7 +79,7 @@ export function SignupForm() {
           <div className="relative">
             <User
               aria-hidden
-              className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-foreground/35"
+              className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted"
             />
             <input
               id="signup-name"
@@ -105,7 +104,7 @@ export function SignupForm() {
           <div className="relative">
             <Mail
               aria-hidden
-              className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-foreground/35"
+              className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted"
             />
             <input
               id="signup-email"
@@ -130,7 +129,7 @@ export function SignupForm() {
           <div className="relative">
             <Lock
               aria-hidden
-              className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-foreground/35"
+              className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted"
             />
             <input
               id="signup-password"
@@ -150,7 +149,7 @@ export function SignupForm() {
               onClick={() => setShowPassword((value) => !value)}
               aria-label={showPassword ? "Hide password" : "Show password"}
               aria-pressed={showPassword}
-              className="absolute top-1/2 right-1.5 grid size-8 -translate-y-1/2 place-items-center rounded-md text-foreground/45 transition-colors hover:bg-black/[0.04] hover:text-foreground"
+              className="absolute top-1/2 right-1.5 grid size-8 -translate-y-1/2 place-items-center rounded-md text-muted transition-colors hover:bg-black/[0.04] hover:text-foreground"
             >
               {showPassword ? (
                 <EyeOff className="size-4" />
@@ -161,9 +160,9 @@ export function SignupForm() {
           </div>
           <p
             id="signup-password-hint"
-            className="mt-1.5 font-sans text-[12px] text-foreground/45"
+            className="mt-1.5 font-sans text-[12px] text-muted"
           >
-            Minimum 8 characters — mix letters and numbers.
+            Minimum 8 characters, with letters and numbers.
           </p>
         </div>
         {inviteRequired && (
@@ -177,7 +176,7 @@ export function SignupForm() {
             <div className="relative">
               <Ticket
                 aria-hidden
-                className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-foreground/35"
+                className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted"
               />
               <input
                 id="signup-invite"
@@ -206,12 +205,12 @@ export function SignupForm() {
         <button
           type="submit"
           disabled={pending}
-          className="btn-brand group h-11 w-full text-[15px]"
+          className="btn-brand group h-11 w-full whitespace-nowrap text-[15px]"
         >
           {pending ? (
             <>
               <Loader2 aria-hidden className="size-4 animate-spin" />
-              Creating account…
+              Creating…
             </>
           ) : (
             <>
@@ -227,7 +226,7 @@ export function SignupForm() {
 
       <div className="my-6 flex items-center gap-3" aria-hidden>
         <span className="h-px flex-1 bg-black/[0.08]" />
-        <span className="font-mono text-[11px] tracking-wider text-foreground/40 uppercase">
+        <span className="text-[12px] text-muted">
           Have an account?
         </span>
         <span className="h-px flex-1 bg-black/[0.08]" />
@@ -237,9 +236,9 @@ export function SignupForm() {
         Log in instead
       </Link>
 
-      <p className="mt-5 flex items-center justify-center gap-1.5 text-center font-sans text-[12px] text-foreground/50">
+      <p className="mt-5 flex items-center justify-center gap-1.5 text-center font-sans text-[12px] text-muted">
         <ShieldCheck aria-hidden className="size-3.5 text-success" />
-        Confidential by design — matters stay private to your account.
+        Confidential by design. Matters stay private to your account.
       </p>
     </div>
   );

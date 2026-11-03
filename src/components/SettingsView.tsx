@@ -61,7 +61,7 @@ export default function SettingsView() {
                 Turn on
               </button>
             )}
-            {permission === "granted" && <span className="rounded-xs bg-success/12 px-1.5 py-0.5 font-mono text-[10px] tracking-wider text-success uppercase">On</span>}
+            {permission === "granted" && <span className="rounded-xs bg-success/12 px-1.5 py-0.5 text-[11px] font-medium text-success">On</span>}
           </div>
         </Section>
 

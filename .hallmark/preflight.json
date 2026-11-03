@@ -1,0 +1,20 @@
+{
+  "scanned": "2026-11-03",
+  "findings": {
+    "fonts": "General Sans 400/500/600 via Fontshare, Inter fallback and JetBrains Mono figures; DM Serif retained only for formal document previews",
+    "palette": "Shared Coral custom properties in src/app/lirava-tokens.css with warm paper, cotton stock, ink controls and coral focus/settled states",
+    "motion": "Framer Motion 12 plus restrained CSS transitions with a reduced-motion fallback",
+    "spacing": "Tailwind CSS 4 utilities and shared component primitives",
+    "framework": "Next.js 16 App Router with React 19 and Tailwind CSS 4"
+  },
+  "preserve": [
+    "existing content and claims",
+    "routes, forms and handlers",
+    "light theme"
+  ],
+  "introduce": [
+    "Coral theme tokens",
+    "generated cotton and felt textures",
+    "letterpress control treatment"
+  ]
+}

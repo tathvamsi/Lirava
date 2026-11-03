@@ -303,7 +303,7 @@ export default function Chat({ dot, conversation, matterId }: { dot: Dot; conver
         } ${
           isResizingSplit
             ? "transition-none select-none pointer-events-none"
-            : "transition-all duration-150"
+            : "transition-opacity duration-150"
         }`}
       >
         {convId && (
@@ -435,7 +435,7 @@ function PaneSplitter({
 
       {/* Center grip handle with grab dots */}
       <div
-        className={`absolute top-1/2 -translate-y-1/2 flex items-center justify-center rounded-full border border-black/10 bg-card py-2.5 px-1 shadow-sm transition-all duration-150 ${
+        className={`absolute top-1/2 -translate-y-1/2 flex items-center justify-center rounded-full border border-black/10 bg-card py-2.5 px-1 shadow-sm transition-colors duration-150 ${
           isDragging
             ? "border-brand ring-2 ring-brand/30 scale-105 opacity-100"
             : "opacity-0 group-hover:opacity-100"
@@ -450,9 +450,9 @@ function PaneSplitter({
 
       {/* Floating ratio indicator pill while dragging */}
       {isDragging && (
-        <div className="pointer-events-none absolute top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1.5 whitespace-nowrap rounded-full border border-brand/20 bg-card/95 px-3 py-1 font-mono text-[11px] font-semibold text-foreground shadow-md backdrop-blur-xs">
+        <div className="pointer-events-none absolute top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1.5 whitespace-nowrap rounded-full border border-brand/20 bg-card/95 px-3 py-1 text-[11px] font-semibold text-foreground shadow-md">
           <span className="text-foreground/60">Chat {chatPercent}%</span>
-          <span className="text-brand">·</span>
+          <span className="text-brand">/</span>
           <span className="text-brand">Doc {boardPercent}%</span>
         </div>
       )}
@@ -497,7 +497,6 @@ function ThinkingStatus() {
 
 function Welcome({ dot, onSuggest }: { dot: Dot; onSuggest: (text: string) => void }) {
   const [greeting, setGreeting] = useState("Welcome back.");
-  const daypart = "";
   const suggestions = getSuggestionsForDot(dot);
   useEffect(() => {
     const hour = new Date().getHours();
@@ -514,12 +513,7 @@ function Welcome({ dot, onSuggest }: { dot: Dot; onSuggest: (text: string) => vo
   }, []);
   return (
     <div className="flex flex-col items-center px-2 pt-10 pb-4 text-center sm:pt-16 animate-page-rise">
-      <div className="hidden">
-        <p className="font-mono text-[11px] tracking-widest text-foreground/40 uppercase">
-          {daypart} · Lirava
-        </p>
-      </div>
-      <h1 className="max-w-[540px] font-serif text-[36px] leading-[1.18] font-normal tracking-[-0.035em] text-balance text-[#f1efea] sm:text-[48px]">
+      <h1 className="max-w-[540px] font-serif text-[36px] leading-[1.18] font-normal tracking-[-0.035em] text-balance text-foreground sm:text-[48px]">
         {greeting}
       </h1>
       {dot.purpose ? (
@@ -544,7 +538,7 @@ function Welcome({ dot, onSuggest }: { dot: Dot; onSuggest: (text: string) => vo
               key={s.id}
               type="button"
               onClick={() => onSuggest(s.template)}
-              className="motion-card group flex items-start gap-3 rounded-2xl border border-black/[0.08] bg-card px-4 py-3.5 text-left transition-all hover:border-black/20 hover:bg-popover hover:shadow-[0_8px_24px_-12px_rgba(0,0,0,0.15)]"
+              className="group flex items-start gap-3 rounded-xl border border-border bg-card px-4 py-3.5 text-left transition-colors hover:border-brand/40 hover:bg-popover"
             >
               <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-brand/10 text-brand-readable">
                 <Icon className="size-4" strokeWidth={1.75} />
@@ -620,7 +614,7 @@ function Composer({ dot, onSend, onStop, submitting = false, draft = null }: { d
 
   if (dot.status === "paused") {
     return (
-      <div className="surface flex items-center justify-between gap-4 px-4 py-3 shadow-[0_8px_32px_-12px_rgba(0,0,0,0.15)]">
+      <div className="surface flex items-center justify-between gap-4 px-4 py-3">
         <span className="text-[13px] text-foreground/60">
           Lirava is paused. Any ongoing work was stopped, and it won&apos;t message you until you resume it.
         </span>
@@ -638,7 +632,7 @@ function Composer({ dot, onSend, onStop, submitting = false, draft = null }: { d
       onDrop={(e) => { e.preventDefault(); setDragging(false); addFiles([...e.dataTransfer.files]); }}
     >
       <div
-        className={`composer-shell rounded-2xl border bg-[#292928] px-4 pt-3 pb-2 shadow-[0_2px_8px_rgba(0,0,0,0.3)] backdrop-blur transition-[box-shadow,border-color] focus-within:border-brand/60 focus-within:shadow-[0_8px_32px_-8px_rgba(0,0,0,0.5)] ${dragging ? "border-brand border-dashed" : "border-white/10"}`}
+        className={`composer-shell rounded-2xl border bg-card px-4 pt-3 pb-2 transition-colors focus-within:border-brand/60 ${dragging ? "border-brand border-dashed" : "border-border"}`}
       >
         {uploads.length > 0 && (
           <div className="mb-2 flex flex-wrap gap-1.5 px-1 pt-1">
@@ -669,7 +663,7 @@ function Composer({ dot, onSend, onStop, submitting = false, draft = null }: { d
           onPaste={(e) => { const pasted = [...e.clipboardData.files]; if (pasted.length) { e.preventDefault(); addFiles(pasted); } }}
           onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); submit(); } }}
           placeholder={dragging ? "Drop files to attach" : "Message Lirava…"}
-          className="max-h-52 min-h-[44px] w-full resize-none bg-transparent px-1 py-2 text-[16px] leading-[1.5] tracking-default outline-none [field-sizing:content] placeholder:text-[#8e8e8e]"
+          className="max-h-52 min-h-[44px] w-full resize-none border-0 bg-transparent px-1 py-2 text-[16px] leading-[1.5] tracking-default outline-none [field-sizing:content] placeholder:text-muted"
         />
 
         <div className="flex items-center gap-1 pb-1">
@@ -683,13 +677,13 @@ function Composer({ dot, onSend, onStop, submitting = false, draft = null }: { d
 
           <div className="ml-auto flex items-center gap-1">
             {submitting && onStop ? (
-              <button type="button" className="motion-card flex size-9 shrink-0 items-center justify-center rounded-full bg-[#f1efea] text-[#1f1f1e] transition-all hover:opacity-85" onClick={onStop} aria-label="Stop response" title="Stop response">
+              <button type="button" className="flex size-9 shrink-0 items-center justify-center rounded-full bg-foreground text-background transition-opacity hover:opacity-85" onClick={onStop} aria-label="Stop response" title="Stop response">
                 <Square className="size-3.5 fill-current" strokeWidth={2} />
               </button>
             ) : (
               <button
                 type="button"
-                className="motion-card flex size-9 shrink-0 items-center justify-center rounded-full bg-foreground text-card transition-all hover:opacity-85 disabled:cursor-not-allowed disabled:bg-black/10 disabled:text-foreground/30"
+                className="flex size-9 shrink-0 items-center justify-center text-foreground transition-opacity hover:opacity-70 disabled:cursor-not-allowed disabled:text-foreground/30"
                 disabled={submitting || pending || busy || (!text.trim() && !ready.length)}
                 onClick={submit}
                 aria-label="Send"
@@ -732,7 +726,7 @@ function Attachments({ items, align = "start" }: { items: Attachment[]; align?: 
           <FileText className="size-4 shrink-0 text-foreground/45" strokeWidth={1.5} />
           <span className="min-w-0">
             <span className="block max-w-56 truncate text-[13px]">{a.name}</span>
-            <span className="block font-mono text-[10px] text-foreground/40 uppercase">{size(a.size)}</span>
+            <span className="block text-[11px] text-foreground/45">{size(a.size)}</span>
           </span>
           <Download className="size-3.5 text-foreground/35" strokeWidth={1.75} />
         </a>
@@ -789,12 +783,12 @@ export function MessageRow({
       <div className="flex justify-end animate-message-rise">
         <div className="flex max-w-[85%] flex-col items-end sm:max-w-[75%]">
           {m.from && (
-            <span className="mb-1 font-mono text-[10px] tracking-wider text-foreground/40 uppercase">
-              {m.from.replace(/^dot:/, "From ").replace(/^routine:/, "Routine · ")}
+            <span className="mb-1 text-[11px] text-foreground/45">
+              {m.from.replace(/^dot:/, "From ").replace(/^routine:/, "Routine: ")}
             </span>
           )}
           {m.text && (
-            <div className="motion-card rounded-2xl rounded-br-sm bg-foreground px-4 py-3 text-[15px] leading-[1.55] tracking-default whitespace-pre-wrap text-card shadow-[0_10px_24px_-16px_rgba(0,0,0,0.55)]">
+            <div className="rounded-2xl rounded-br-sm bg-foreground px-4 py-3 text-[15px] leading-[1.55] tracking-default whitespace-pre-wrap text-card">
               {m.text}
             </div>
           )}
@@ -812,8 +806,8 @@ export function MessageRow({
       <div className="motion-line flex min-w-0 items-center gap-2 rounded-full bg-card/55 px-2.5 py-1 text-foreground/40">
         <Icon className="size-3.5 shrink-0" strokeWidth={1.5} />
         {showName && <span className="shrink-0 text-[12px] text-foreground/55">Lirava</span>}
-        <span className="shrink-0 font-mono text-[11px] tracking-wide whitespace-nowrap uppercase">{label}</span>
-        {rest.length > 0 && <span className="truncate font-mono text-[11px] text-foreground/30">{rest.join(" · ")}</span>}
+        <span className="shrink-0 text-[12px] font-medium whitespace-nowrap">{label}</span>
+        {rest.length > 0 && <span className="truncate text-[11px] text-foreground/40">{rest.join(": ")}</span>}
       </div>
     );
   }
@@ -856,7 +850,7 @@ export function MessageRow({
           <div className="mb-1 text-[13px] font-medium text-foreground/70">Lirava</div>
         )}
         {m.title && (
-          <div className="mb-2 inline-flex items-center gap-1.5 rounded-sm bg-highlight px-1.5 py-0.5 font-mono text-[10px] tracking-wider text-highlight-foreground uppercase">
+          <div className="mb-2 inline-flex items-center gap-1.5 rounded-sm bg-highlight px-1.5 py-0.5 text-[11px] font-medium text-highlight-foreground">
             <Sparkles className="size-3" strokeWidth={2} />
             {m.title}
           </div>
@@ -1072,7 +1066,7 @@ function DetectedDocCard({
   return (
     <div
       onClick={handleOpen}
-      className="group my-3 flex items-center justify-between gap-3.5 rounded-2xl border border-black/10 bg-card p-3 sm:px-4 sm:py-3.5 transition-all hover:border-black/20 hover:bg-popover/80 hover:shadow-xs cursor-pointer"
+      className="group my-3 flex items-center justify-between gap-3.5 rounded-xl border border-border bg-card p-3 transition-colors hover:border-brand/40 hover:bg-popover/80 sm:px-4 sm:py-3.5 cursor-pointer"
       title="Click to view document in Artifact Board"
     >
       <div className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-black/[0.08] bg-black/[0.03] text-foreground/70 transition-colors group-hover:border-black/15 group-hover:bg-black/[0.05] group-hover:text-foreground">
@@ -1084,7 +1078,7 @@ function DetectedDocCard({
           {detected.title}
         </h4>
         <p className="mt-0.5 truncate text-[12px] text-foreground/50">
-          Document · PDF
+          Document, PDF
         </p>
       </div>
 
@@ -1119,8 +1113,8 @@ function CardRow({ m }: { m: Message }) {
       <div className="ml-[40px] flex max-w-[520px] items-center gap-2.5 rounded-lg border border-black/[0.06] bg-card/60 px-3 py-2">
         <Icon className={`size-3.5 shrink-0 ${tone}`} strokeWidth={2} />
         <span className="truncate text-[13px] text-foreground/60">{card.title}</span>
-        <span className={`ml-auto shrink-0 font-mono text-[10px] tracking-wider uppercase ${tone}`}>
-          {card.status === "answered" ? `Answered · ${card.answer}` : card.kind === "connect" && card.status === "approved" ? "Connected" : card.status}
+        <span className={`ml-auto shrink-0 text-[11px] font-medium ${tone}`}>
+          {card.status === "answered" ? `Answered: ${card.answer}` : card.kind === "connect" && card.status === "approved" ? "Connected" : card.status}
         </span>
       </div>
     );
@@ -1216,5 +1210,5 @@ function ConnectActions({ m }: { m: Message }) {
 function DateSeparator({ ts }: { ts: number }) {
   const d = new Date(ts);
   const label = d.toLocaleString(undefined, { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
-  return <div className="py-4 text-center font-mono text-[10px] tracking-wider text-foreground/30 uppercase">{label}</div>;
+  return <div className="py-4 text-center text-[11px] text-foreground/40">{label}</div>;
 }

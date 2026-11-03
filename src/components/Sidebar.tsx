@@ -15,8 +15,8 @@ import type { Conversation, Matter, Message } from "@/lib/types";
 export function Wordmark() {
   return (
     <span className="flex items-center gap-2.5">
-      <span className="flex size-6 items-center justify-center rounded-[8px] bg-[#292928] text-[12px] font-semibold text-[#f1efea] shadow-sm">S</span>
-      <span className="font-serif text-[20px] font-medium tracking-[-0.04em] text-[#f1efea]">Lirava</span>
+      <span className="flex size-6 items-center justify-center rounded-[8px] bg-navy text-[12px] font-semibold text-white shadow-sm">L</span>
+      <span className="font-serif text-[20px] font-medium tracking-[-0.04em] text-foreground">Lirava</span>
     </span>
   );
 }
@@ -271,7 +271,7 @@ export default function Sidebar() {
   return (
     <>
       {/* Phones / narrow windows: the sidebar is a drawer over a dimmed backdrop */}
-      {drawerOpen && <div className="fixed inset-0 z-40 bg-black/25 backdrop-blur-[2px] animate-page-rise md:hidden" onClick={() => setSidebarOpen(false)} />}
+      {drawerOpen && <div className="fixed inset-0 z-40 bg-black/25 animate-page-rise md:hidden" onClick={() => setSidebarOpen(false)} />}
       <aside
         // Picking anything in the drawer closes it on mobile.
         onClickCapture={(e) => {
@@ -281,12 +281,12 @@ export default function Sidebar() {
             }
           }
         }}
-        className={`fixed inset-y-0 left-0 z-50 flex h-full flex-col bg-[#141414] text-[#f1efea] shadow-2xl backdrop-blur-xl transition-[width,min-width,max-width,transform,opacity] duration-300 ease-[cubic-bezier(0.2,0,0,1)] md:static md:z-auto md:bg-[#141414] md:shadow-none md:backdrop-blur-none ${
+        className={`fixed inset-y-0 left-0 z-50 flex h-full flex-col bg-card text-foreground shadow-2xl transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.2,0,0,1)] md:static md:z-auto md:bg-card md:shadow-none ${
           drawerOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         } ${
           collapsed
             ? "md:w-0 md:min-w-0 md:max-w-0 md:opacity-0 md:pointer-events-none md:border-r-0"
-            : "md:w-[280px] md:min-w-[280px] md:max-w-[280px] md:opacity-100 md:border-r md:border-[#302f2d]"
+            : "md:w-[280px] md:min-w-[280px] md:max-w-[280px] md:opacity-100 md:border-r md:border-border"
         } overflow-hidden w-[260px] max-w-[85vw]`}
       >
         <div className="flex h-full w-[280px] min-w-[280px] max-w-[280px] shrink-0 flex-col">
@@ -297,7 +297,7 @@ export default function Sidebar() {
             </Link>
             <button
               type="button"
-              className={`motion-card flex size-8 items-center justify-center rounded-lg text-foreground/60 transition-colors hover:bg-white/10 hover:text-foreground ${searching ? "bg-[#292928] text-foreground shadow-none" : ""}`}
+              className={`flex size-8 items-center justify-center text-foreground/60 transition-colors hover:text-foreground ${searching ? "text-foreground" : ""}`}
               onClick={() => (searching ? closeSearch() : setSearching(true))}
               title="Search chats"
               aria-label="Search chats"
@@ -306,7 +306,7 @@ export default function Sidebar() {
             </button>
             <Link
               href={newChatHref}
-              className="motion-card flex size-8 items-center justify-center rounded-lg text-foreground/60 transition-colors hover:bg-white/10 hover:text-foreground"
+              className="motion-card flex size-8 items-center justify-center rounded-lg text-foreground/60 transition-colors hover:bg-highlight hover:text-foreground"
               title="New chat"
               aria-label="New chat"
             >
@@ -314,7 +314,7 @@ export default function Sidebar() {
             </Link>
             <button
               type="button"
-              className="motion-card hidden size-8 items-center justify-center rounded-lg text-foreground/60 transition-colors hover:bg-white/10 hover:text-foreground md:flex"
+              className="hidden size-8 items-center justify-center text-foreground/60 transition-colors hover:text-foreground md:flex"
               onClick={() => setSidebarCollapsed(true)}
               title="Close sidebar (Ctrl+B)"
               aria-label="Close sidebar"
@@ -342,7 +342,7 @@ export default function Sidebar() {
 
           <Link
             href={newChatHref}
-            className="mx-2 mb-5 flex h-8 items-center gap-2 rounded-lg bg-[#353534] px-3 text-[14px] font-medium text-[#f1efea] transition-colors hover:bg-[#41403e]"
+            className="mx-2 mb-5 flex h-8 items-center gap-2 rounded-lg bg-highlight px-3 text-[14px] font-medium text-foreground transition-colors hover:bg-highlight"
           >
             <SquarePen className="size-4" strokeWidth={1.75} />
             New chat
@@ -351,14 +351,14 @@ export default function Sidebar() {
           <nav className="mx-2 mb-6 space-y-1">
             <Link
               href="/matters"
-              className={`flex h-8 items-center gap-3 rounded-lg px-2 text-[14px] transition-colors ${pathname === "/matters" ? "bg-[#292928] text-[#f1efea]" : "text-foreground/80 hover:bg-white/10 hover:text-foreground"}`}
+              className={`flex h-8 items-center gap-3 rounded-lg px-2 text-[14px] transition-colors ${pathname === "/matters" ? "bg-card text-foreground" : "text-foreground/80 hover:bg-highlight hover:text-foreground"}`}
             >
               <FolderKanban className="size-4" strokeWidth={1.75} />
               Cases &amp; Matters
             </Link>
             <Link
               href="/artifacts"
-              className={`flex h-8 items-center gap-3 rounded-lg px-2 text-[14px] transition-colors ${pathname === "/artifacts" ? "bg-[#292928] text-[#f1efea]" : "text-foreground/80 hover:bg-white/10 hover:text-foreground"}`}
+              className={`flex h-8 items-center gap-3 rounded-lg px-2 text-[14px] transition-colors ${pathname === "/artifacts" ? "bg-card text-foreground" : "text-foreground/80 hover:bg-highlight hover:text-foreground"}`}
             >
               <Boxes className="size-4" strokeWidth={1.75} />
               Artifacts
@@ -376,7 +376,7 @@ export default function Sidebar() {
                   const expanded = expandedMatterIds.includes(matter.id);
                   const matterChats = conversations.filter((conversation) => conversation.matterId === matter.id).sort((a, b) => b.updatedAt - a.updatedAt);
                   return <div key={matter.id}>
-                    <div className="group flex items-center rounded-lg hover:bg-white/10">
+                    <div className="group flex items-center rounded-lg hover:bg-highlight">
                       <button type="button" onClick={() => setExpandedMatterIds((current) => expanded ? current.filter((id) => id !== matter.id) : [...current, matter.id])} className="flex size-7 shrink-0 items-center justify-center text-foreground/45 hover:text-foreground" aria-label={`${expanded ? "Collapse" : "Expand"} ${matter.title}`}>
                         {expanded ? <ChevronDown className="size-3.5" /> : <ChevronRight className="size-3.5" />}
                       </button>
@@ -385,8 +385,8 @@ export default function Sidebar() {
                       </Link>
                       <span className="pr-2 text-[10px] text-foreground/35">{matterChats.length || ""}</span>
                     </div>
-                    {expanded && matterChats.length > 0 && <div className="ml-3 border-l border-white/10 pl-3">
-                      {matterChats.map((chat) => <Link key={chat.id} href={`${dotHref(chat.dotId, chat.id)}&matter=${encodeURIComponent(matter.id)}`} onClick={() => markRead(chat.dotId)} className={`block truncate rounded-md px-2 py-1.5 text-[13px] ${chat.id === activeConv ? "bg-[#292928] text-foreground" : "text-foreground/60 hover:bg-white/10 hover:text-foreground"}`} title={chat.title}>
+                    {expanded && matterChats.length > 0 && <div className="ml-3 border-l border-border pl-3">
+                      {matterChats.map((chat) => <Link key={chat.id} href={`${dotHref(chat.dotId, chat.id)}&matter=${encodeURIComponent(matter.id)}`} onClick={() => markRead(chat.dotId)} className={`block truncate rounded-md px-2 py-1.5 text-[13px] ${chat.id === activeConv ? "bg-card text-foreground" : "text-foreground/60 hover:bg-highlight hover:text-foreground"}`} title={chat.title}>
                         <span className="mr-2 text-foreground/35">◦</span>{chat.title || "Untitled chat"}
                       </Link>)}
                     </div>}
@@ -426,12 +426,12 @@ export default function Sidebar() {
               return (
                 <div
                   key={c.id}
-                  className={`group relative flex items-center rounded-xl transition-colors ${
+                  className={`group relative flex items-center transition-colors ${
                     menuOpen ? "z-40" : "z-0 hover:z-10"
                   } ${
                     c.id === activeConv
-                      ? "bg-[#292928]"
-                      : "hover:bg-white/10"
+                      ? "border-l-2 border-brand"
+                      : "hover:bg-highlight"
                   }`}
                 >
                   <Link href={dotHref(d.id, c.id)} onClick={() => markRead(d.id)} className="flex min-w-0 flex-1 items-center gap-3 px-2.5 py-2">
@@ -466,7 +466,7 @@ export default function Sidebar() {
                   {/* Kebab → conversation options */}
                   <button
                     data-conv-trigger={c.id}
-                    className={`absolute top-2 right-2 z-20 flex size-6 items-center justify-center rounded text-foreground/40 hover:bg-white/10 hover:text-foreground ${
+                    className={`absolute top-2 right-2 z-20 flex size-6 items-center justify-center rounded text-foreground/40 hover:bg-highlight hover:text-foreground ${
                       menuOpen ? "flex text-foreground" : "hidden group-hover:flex"
                     }`}
                     onClick={(e) => {
@@ -484,7 +484,7 @@ export default function Sidebar() {
                     <div
                       ref={menuRef}
                       data-conv-menu
-                      className={`absolute right-1 z-50 w-52 overflow-hidden rounded-xl border border-white/10 bg-[#1f1f1e] py-1.5 text-[#f1efea] shadow-[0_16px_48px_-8px_rgba(0,0,0,0.65)] animate-page-rise ${
+                      className={`absolute right-1 z-50 w-52 overflow-hidden rounded-xl border border-border bg-background py-1.5 text-foreground shadow-elevated animate-page-rise ${
                         openUpwards ? "bottom-8" : "top-9"
                       }`}
                     >
@@ -498,7 +498,7 @@ export default function Sidebar() {
                         label={pinned ? "Unpin" : "Pin"}
                         onClick={() => (toggleId(pinnedIds, "soli:pinned", c.id, setPinnedIds), setMenuOpenId(null))}
                       />
-                      <div className="mx-3 my-1.5 h-px bg-white/10" />
+                      <div className="mx-3 my-1.5 h-px bg-highlight" />
                       <MenuItem
                         icon={<Upload className="size-4" strokeWidth={1.75} />}
                         label="Share"
@@ -515,12 +515,12 @@ export default function Sidebar() {
                         onClick={() => (toggleId(archivedIds, "soli:archived", c.id, setArchivedIds), setMenuOpenId(null))}
                       />
                       <MenuItem
-                        icon={<Trash2 className="size-4 text-[#f87171]" strokeWidth={1.75} />}
+                        icon={<Trash2 className="size-4 text-destructive" strokeWidth={1.75} />}
                         label="Delete"
                         danger
                         onClick={() => (setMenuOpenId(null), setConfirming(c.id))}
                       />
-                      <div className="mx-3 my-1.5 h-px bg-white/10" />
+                      <div className="mx-3 my-1.5 h-px bg-highlight" />
                   </div>
                   )}
                 </div>
@@ -535,45 +535,45 @@ export default function Sidebar() {
               <button
                 type="button"
                 onClick={() => setShowArchived((v) => !v)}
-                className="mx-2 mb-2 flex w-[calc(100%-16px)] items-center gap-2 rounded-lg px-2.5 py-2 text-[13px] text-foreground/50 transition-colors hover:bg-white/10 hover:text-foreground"
+                className="mx-2 mb-2 flex w-[calc(100%-16px)] items-center gap-2 rounded-lg px-2.5 py-2 text-[13px] text-foreground/50 transition-colors hover:bg-highlight hover:text-foreground"
               >
                 <Archive className="size-3.5" strokeWidth={1.75} />
-                {showArchived ? "Hide archived" : `Archived · ${archivedCount}`}
+                {showArchived ? "Hide archived" : `Archived (${archivedCount})`}
               </button>
             )}
           </nav>
 
           {movingId && (
             <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/35 p-4" onMouseDown={(event) => event.target === event.currentTarget && setMovingId(null)}>
-              <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-[#252524] p-4 text-[#f1efea] shadow-2xl">
+              <div className="w-full max-w-sm rounded-2xl border border-border bg-background p-4 text-foreground">
                 <div className="mb-3 flex items-center justify-between"><h2 className="text-[15px] font-medium">Move chat to matter</h2><button type="button" onClick={() => setMovingId(null)} className="text-foreground/50 hover:text-foreground" aria-label="Close">×</button></div>
                 <div className="max-h-64 space-y-1 overflow-y-auto">
-                  <button type="button" onClick={() => { const chat = conversations.find((item) => item.id === movingId); if (chat) moveToMatter(chat, null); }} className="w-full rounded-lg px-3 py-2 text-left text-[13px] text-foreground/65 hover:bg-white/10 hover:text-foreground">No matter</button>
-                  {matters.map((matter) => <button key={matter.id} type="button" onClick={() => { const chat = conversations.find((item) => item.id === movingId); if (chat) moveToMatter(chat, matter.id); }} className="w-full truncate rounded-lg px-3 py-2 text-left text-[13px] hover:bg-white/10">{matter.title}</button>)}
+                  <button type="button" onClick={() => { const chat = conversations.find((item) => item.id === movingId); if (chat) moveToMatter(chat, null); }} className="w-full rounded-lg px-3 py-2 text-left text-[13px] text-foreground/65 hover:bg-highlight hover:text-foreground">No matter</button>
+                  {matters.map((matter) => <button key={matter.id} type="button" onClick={() => { const chat = conversations.find((item) => item.id === movingId); if (chat) moveToMatter(chat, matter.id); }} className="w-full truncate rounded-lg px-3 py-2 text-left text-[13px] hover:bg-highlight">{matter.title}</button>)}
                 </div>
               </div>
             </div>
           )}
 
-          <div ref={profileRef} className="relative shrink-0 border-t border-[#302f2d] p-2">
+          <div ref={profileRef} className="relative shrink-0 border-t border-border p-2">
             {profileOpen && (
-              <div role="menu" aria-label="Account menu" className="absolute right-2 bottom-[68px] z-50 w-[264px] overflow-hidden rounded-xl border border-white/10 bg-[#252524] py-2 text-[#f1efea] shadow-[0_16px_48px_-8px_rgba(0,0,0,0.65)] animate-page-rise">
+              <div role="menu" aria-label="Account menu" className="absolute right-2 bottom-[68px] z-50 w-[264px] overflow-hidden rounded-xl border border-border bg-background py-2 text-foreground shadow-elevated animate-page-rise">
                 <div className="px-3 py-2.5">
                   <p className="truncate text-[13px] font-medium">{displayName}</p>
                   <p className="truncate pt-0.5 text-[12px] text-foreground/55">{user?.email || "Signed in to Lirava"}</p>
                 </div>
-                <div className="mx-3 my-1 h-px bg-white/10" />
-                <Link role="menuitem" href="/settings" onClick={() => setProfileOpen(false)} className="flex items-center gap-3 px-3 py-2 text-[14px] hover:bg-white/10"><Settings className="size-4" />Settings</Link>
-                <div role="menuitem" aria-disabled="true" className="flex items-center gap-3 px-3 py-2 text-[14px] text-foreground/60"><Palette className="size-4" />Appearance <span className="ml-auto text-[12px]">Dark</span></div>
+                <div className="mx-3 my-1 h-px bg-highlight" />
+                <Link role="menuitem" href="/settings" onClick={() => setProfileOpen(false)} className="flex items-center gap-3 px-3 py-2 text-[14px] hover:bg-highlight"><Settings className="size-4" />Settings</Link>
+                <div role="menuitem" aria-disabled="true" className="flex items-center gap-3 px-3 py-2 text-[14px] text-foreground/60"><Palette className="size-4" />Appearance <span className="ml-auto text-[12px]">Light</span></div>
                 <div role="menuitem" aria-disabled="true" className="flex items-center gap-3 px-3 py-2 text-[14px] text-foreground/60"><Globe className="size-4" />Language <span className="ml-auto text-[12px]">English</span></div>
                 <div role="menuitem" aria-disabled="true" className="flex items-center gap-3 px-3 py-2 text-[14px] text-foreground/60"><Keyboard className="size-4" />Keyboard shortcuts</div>
-                <Link role="menuitem" href="/privacy" onClick={() => setProfileOpen(false)} className="flex items-center gap-3 px-3 py-2 text-[14px] hover:bg-white/10"><ShieldCheck className="size-4" />Privacy</Link>
-                <div className="mx-3 my-1 h-px bg-white/10" />
-                <LogoutButton className="flex w-full items-center gap-3 px-3 py-2 text-[14px] text-foreground/80 transition-colors hover:bg-white/10 hover:text-foreground disabled:opacity-40" icon={<LogOut className="size-4" />} />
+                <Link role="menuitem" href="/privacy" onClick={() => setProfileOpen(false)} className="flex items-center gap-3 px-3 py-2 text-[14px] hover:bg-highlight"><ShieldCheck className="size-4" />Privacy</Link>
+                <div className="mx-3 my-1 h-px bg-highlight" />
+                <LogoutButton className="flex w-full items-center gap-3 px-3 py-2 text-[14px] text-foreground/80 transition-colors hover:bg-highlight hover:text-foreground disabled:opacity-40" icon={<LogOut className="size-4" />} />
               </div>
             )}
-            <button type="button" aria-haspopup="menu" aria-expanded={profileOpen} onClick={() => setProfileOpen((open) => !open)} className="flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-left transition-colors hover:bg-white/10">
-              <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-[#353534] text-[11px] font-semibold">{initials}</span>
+            <button type="button" aria-haspopup="menu" aria-expanded={profileOpen} onClick={() => setProfileOpen((open) => !open)} className="flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-left transition-colors hover:bg-highlight">
+              <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-highlight text-[11px] font-semibold">{initials}</span>
               <span className="min-w-0 flex-1"><span className="block truncate text-[13px] font-medium">{displayName}</span><span className="block truncate text-[11px] text-foreground/50">{user?.role || "Account"}</span></span>
               <ChevronsUpDown className="size-4 text-foreground/55" />
             </button>
@@ -583,13 +583,13 @@ export default function Sidebar() {
           <div className="hidden shrink-0 items-center gap-2 p-3">
             <Link
               href="/apps"
-              className={`hidden h-10 flex-1 items-center justify-center gap-1.5 rounded-full border text-[13px] transition-colors ${pathname === "/apps" ? "border-foreground bg-card" : "border-white/10 hover:border-white/25"}`}
+              className={`hidden h-10 flex-1 items-center justify-center gap-1.5 rounded-full border text-[13px] transition-colors ${pathname === "/apps" ? "border-foreground bg-card" : "border-border hover:border-border"}`}
             >
               <LayoutGrid className="size-3.5" strokeWidth={1.5} /> Apps
             </Link>
             <Link
               href="/landing"
-              className="hidden size-10 shrink-0 items-center justify-center rounded-full border border-white/10 transition-colors hover:border-white/25 text-foreground/70 hover:text-foreground"
+              className="hidden size-10 shrink-0 items-center justify-center rounded-full border border-border transition-colors hover:border-border text-foreground/70 hover:text-foreground"
               title="Product Tour & Overview"
               aria-label="Product Tour"
             >
@@ -597,15 +597,15 @@ export default function Sidebar() {
             </Link>
             <Link
               href="/settings"
-              className={`relative flex size-10 items-center justify-center rounded-full border transition-colors ${pathname === "/settings" ? "border-foreground bg-card" : "border-white/10 hover:border-white/25"}`}
-              title={`Settings · ${connected ? "connected" : "reconnecting"}`}
+              className={`relative flex size-10 items-center justify-center rounded-full border transition-colors ${pathname === "/settings" ? "border-foreground bg-card" : "border-border hover:border-border"}`}
+              title={`Settings: ${connected ? "connected" : "reconnecting"}`}
               aria-label="Settings"
             >
               <Settings className="size-4" strokeWidth={1.5} />
               <span className={`absolute top-0.5 right-0.5 size-2 rounded-full ring-2 ring-background ${connected ? "bg-success" : "bg-foreground/25"}`} />
             </Link>
             <LogoutButton
-              className="flex size-10 items-center justify-center rounded-full border border-white/10 text-foreground/70 transition-colors hover:border-white/25 hover:text-foreground disabled:opacity-40"
+              className="flex size-10 items-center justify-center rounded-full border border-border text-foreground/70 transition-colors hover:border-border hover:text-foreground disabled:opacity-40"
               icon={<LogOut className="size-4" strokeWidth={1.5} />}
             />
           </div>
@@ -625,7 +625,7 @@ function MenuItem({ icon, label, onClick, danger = false, trailing }: { icon: Re
         e.stopPropagation();
         onClick();
       }}
-      className={`flex w-full items-center gap-2.5 px-4 py-2 text-left text-[13.5px] transition-colors hover:bg-white/10 ${danger ? "text-[#f87171]" : ""}`}
+      className={`flex w-full items-center gap-2.5 px-4 py-2 text-left text-[13.5px] transition-colors hover:bg-highlight ${danger ? "text-destructive" : ""}`}
     >
       <span className="shrink-0 opacity-80">{icon}</span>
       <span className="min-w-0 flex-1 truncate">{label}</span>

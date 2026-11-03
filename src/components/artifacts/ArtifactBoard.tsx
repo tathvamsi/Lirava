@@ -169,7 +169,7 @@ export function ArtifactBoard({
         fullscreen
           ? "fixed inset-0 z-50 bg-background"
           : "h-full w-full lg:max-w-[85vw]"
-      } ${isDragging ? "transition-none select-none" : "transition-[width] duration-150"}`}
+      } ${isDragging ? "select-none" : ""}`}
     >
       {/* Active dragging transparent overlay when standalone */}
       {internalDragging && (
@@ -181,7 +181,7 @@ export function ArtifactBoard({
         <div
           onPointerDown={handlePointerDown}
           onDoubleClick={handleDoubleClick}
-          title="Drag left/right to resize · Double-click for 50/50"
+          title="Drag left or right to resize. Double-click for 50/50."
           className="group absolute -left-1.5 top-0 bottom-0 z-40 flex w-3 cursor-col-resize select-none touch-none items-center justify-center"
         >
           {/* Visible line highlight */}
@@ -225,8 +225,8 @@ export function ArtifactBoard({
                 </button>
 
                 {showDropdown && (
-                  <div className="absolute top-full left-0 z-50 mt-1 w-72 rounded-xl border border-black/10 bg-card p-1 shadow-elevated">
-                    <div className="px-2 py-1 text-[11px] font-mono uppercase text-foreground/45">
+                  <div className="absolute top-full left-0 z-50 mt-1 w-72 p-1">
+                    <div className="px-2 py-1 text-[12px] font-medium text-foreground/50">
                       Session Documents ({convArtifacts.length})
                     </div>
                     {convArtifacts.map((a) => (
@@ -237,10 +237,10 @@ export function ArtifactBoard({
                           setActiveArtifact(a.id);
                           setShowDropdown(false);
                         }}
-                        className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-[13px] transition-colors ${
+                        className={`flex w-full items-center gap-2 border-l-2 px-2.5 py-2 text-left text-[13px] transition-colors ${
                           a.id === current.id
-                            ? "bg-brand/10 font-medium text-brand-readable"
-                            : "hover:bg-black/[0.04]"
+                            ? "border-brand font-medium text-brand-readable"
+                            : "border-transparent hover:text-foreground"
                         }`}
                       >
                         {a.kind === "legal_paper" ? (
@@ -260,8 +260,8 @@ export function ArtifactBoard({
               </h3>
             )}
             <div className="flex items-center gap-1.5 text-[11px] text-foreground/45">
-              <span className="font-mono uppercase">{current.kind.replace("_", " ")}</span>
-              <span>·</span>
+              <span>{current.kind.replace("_", " ")}</span>
+              <span aria-hidden>/</span>
               <span>{new Date(current.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
             </div>
           </div>

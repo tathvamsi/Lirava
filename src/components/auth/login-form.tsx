@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useState, type FormEvent } from "react";
@@ -57,10 +57,9 @@ export function LoginForm({ next }: { next?: string }) {
   }
 
   return (
-    <div className="animate-auth-rise rounded-2xl border border-white/10 bg-[#222220] p-7 shadow-[0_24px_70px_-28px_rgba(0,0,0,0.8)] sm:p-8">
-      <p className="font-mono text-[11px] tracking-wider text-[#db7a5c] uppercase">Welcome back</p>
-      <h2 className="mt-3 font-serif text-[32px] leading-none tracking-[-0.04em] text-[#f1efea]">Log in to Lirava</h2>
-      <p className="mt-3 text-[14px] leading-relaxed text-white/55">
+    <div className="animate-auth-rise rounded-2xl border border-border bg-card p-7 shadow-elevated sm:p-8">
+      <h2 className="font-serif text-[32px] leading-none tracking-[-0.04em] text-foreground">Log in to Lirava</h2>
+      <p className="mt-3 text-[14px] leading-relaxed text-muted">
         Access your matters, research, and legal documents.
       </p>
 
@@ -68,14 +67,14 @@ export function LoginForm({ next }: { next?: string }) {
         <div>
           <label
             htmlFor="login-email"
-            className="mb-1.5 block font-sans text-[13px] font-medium text-white/85"
+            className="mb-1.5 block font-sans text-[13px] font-medium text-foreground/85"
           >
             Work email
           </label>
           <div className="relative">
             <Mail
               aria-hidden
-              className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-foreground/35"
+              className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted"
             />
             <input
               id="login-email"
@@ -87,7 +86,7 @@ export function LoginForm({ next }: { next?: string }) {
               onChange={(event) => setEmail(event.target.value)}
               placeholder="you@firm.com"
               aria-invalid={error ? true : undefined}
-              className="field auth-field h-11 border-white/10 bg-[#1c1c1b] pl-9"
+              className="field auth-field h-11 border-border bg-card pl-9"
             />
           </div>
         </div>
@@ -96,18 +95,18 @@ export function LoginForm({ next }: { next?: string }) {
           <div className="mb-1.5 flex items-baseline justify-between">
             <label
               htmlFor="login-password"
-              className="block font-sans text-[13px] font-medium text-white/85"
+              className="block font-sans text-[13px] font-medium text-foreground/85"
             >
               Password
             </label>
-            <span className="font-sans text-[12px] text-foreground/45">
+            <span className="font-sans text-[12px] text-muted">
               Case-sensitive
             </span>
           </div>
           <div className="relative">
             <Lock
               aria-hidden
-              className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-foreground/35"
+              className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted"
             />
             <input
               id="login-password"
@@ -120,14 +119,14 @@ export function LoginForm({ next }: { next?: string }) {
               placeholder="Your password"
               aria-invalid={error ? true : undefined}
               aria-describedby={error ? "login-error" : undefined}
-              className="field auth-field h-11 border-white/10 bg-[#1c1c1b] pr-11 pl-9"
+              className="field auth-field h-11 border-border bg-card pr-11 pl-9"
             />
             <button
               type="button"
               onClick={() => setShowPassword((value) => !value)}
               aria-label={showPassword ? "Hide password" : "Show password"}
               aria-pressed={showPassword}
-              className="absolute top-1/2 right-1.5 grid size-8 -translate-y-1/2 place-items-center rounded-md text-foreground/45 transition-colors hover:bg-black/[0.04] hover:text-foreground"
+              className="absolute top-1/2 right-1.5 grid size-8 -translate-y-1/2 place-items-center rounded-md text-muted transition-colors hover:bg-black/[0.04] hover:text-foreground"
             >
               {showPassword ? (
                 <EyeOff className="size-4" />
@@ -152,7 +151,7 @@ export function LoginForm({ next }: { next?: string }) {
         <button
           type="submit"
           disabled={pending}
-          className="btn-brand group h-11 w-full text-[15px] shadow-[0_12px_28px_-12px_rgba(219,122,92,0.8)]"
+          className="btn-brand group h-11 w-full text-[15px]"
         >
           {pending ? (
             <>
@@ -173,7 +172,7 @@ export function LoginForm({ next }: { next?: string }) {
 
       <div className="my-6 flex items-center gap-3" aria-hidden>
         <span className="h-px flex-1 bg-black/[0.08]" />
-        <span className="font-mono text-[11px] tracking-wider text-foreground/40 uppercase">
+        <span className="text-[12px] text-muted">
           New to Lirava?
         </span>
         <span className="h-px flex-1 bg-black/[0.08]" />
@@ -183,9 +182,9 @@ export function LoginForm({ next }: { next?: string }) {
         Create an account
       </Link>
 
-      <p className="mt-5 flex items-center justify-center gap-1.5 text-center font-sans text-[12px] text-foreground/50">
+      <p className="mt-5 flex items-center justify-center gap-1.5 text-center font-sans text-[12px] text-muted">
         <ShieldCheck aria-hidden className="size-3.5 text-success" />
-        Confidential by design — matters stay private to your account.
+        Confidential by design. Matters stay private to your account.
       </p>
     </div>
   );

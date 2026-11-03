@@ -19,12 +19,12 @@ export function ArtifactCard({ artifactId }: { artifactId: string }) {
 
   const isSelected = activeId === artifact.id;
 
-  // Format subtitle badge just like Claude: "Document · PDF" or "Document · PDF · Word"
+  // Keep the available document formats visible at a glance.
   const formats: string[] = [];
   if (artifact.pdfFileId) formats.push("PDF");
   if (artifact.docxFileId) formats.push("Word");
   if (!formats.length) formats.push(isLegal ? "Legal Paper" : "Markdown");
-  const subtitle = `Document · ${formats.join(" · ")}`;
+  const subtitle = `Document: ${formats.join(", ")}`;
 
   // Primary download target (prefer PDF if available, otherwise docx or fileId)
   const primaryDownloadId = artifact.pdfFileId || artifact.docxFileId || artifact.fileId;
@@ -32,7 +32,7 @@ export function ArtifactCard({ artifactId }: { artifactId: string }) {
   return (
     <div
       onClick={openBoard}
-      className={`group my-3 flex items-center justify-between gap-3.5 rounded-2xl border p-3 sm:px-4 sm:py-3.5 transition-all cursor-pointer ${
+      className={`group my-3 flex items-center justify-between gap-3.5 rounded-2xl border p-3 sm:px-4 sm:py-3.5 transition-colors cursor-pointer ${
         isSelected
           ? "border-brand bg-brand/[0.04] ring-1 ring-brand/30 shadow-xs"
           : "border-black/10 bg-card hover:border-black/20 hover:bg-popover/80 hover:shadow-xs"
@@ -51,7 +51,7 @@ export function ArtifactCard({ artifactId }: { artifactId: string }) {
             {artifact.title}
           </h4>
           {isSelected && (
-            <span className="shrink-0 rounded-xs bg-brand/15 px-1.5 py-0.2 font-mono text-[9px] font-semibold text-brand-readable uppercase">
+            <span className="shrink-0 rounded-xs bg-brand/15 px-1.5 py-0.5 text-[10px] font-medium text-brand-readable">
               Open
             </span>
           )}

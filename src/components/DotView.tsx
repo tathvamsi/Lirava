@@ -21,7 +21,7 @@ export default function DotView({ dotId, tab, conversation, matterId }: { dotId:
     <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
       <header className="relative flex h-14 shrink-0 items-center gap-1.5 px-2 sm:gap-2 sm:px-4">
         <MenuButton />
-        <Link href={base} className="flex min-w-0 items-center rounded-md px-2 py-1.5 text-[14px] font-medium transition-colors hover:bg-white/10">Lirava</Link>
+        <Link href={base} className="flex min-w-0 items-center rounded-md px-2 py-1.5 text-[14px] font-medium transition-colors hover:bg-highlight">Lirava</Link>
       </header>
 
       {tab === "setup" ? <SetupPane key={dot.id} dot={dot} /> : <Chat key={`${dot.id}:${conversation ?? "latest"}:${matterId ?? "none"}`} dot={dot} conversation={conversation} matterId={matterId} />}

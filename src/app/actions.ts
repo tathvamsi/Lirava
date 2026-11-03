@@ -7,8 +7,8 @@ import {
   BACKEND_URL,
   backendFetch,
   createBackendConversation,
-  createBackendDot,
-  deleteBackendDot,
+  createBackendAgent,
+  deleteBackendAgent,
   sendAgentMessage,
   abortAgent,
   createBackendMatter,
@@ -42,7 +42,7 @@ export async function createDot(input: {
   const defaultInstructions = getPersonaByName(name)?.instructions ?? "";
   const instructions = input.instructions?.trim() || defaultInstructions;
 
-  const dot = await createBackendDot({
+  const dot = await createBackendAgent({
     name,
     purpose: input.purpose.trim(),
     instructions,
@@ -66,7 +66,7 @@ export async function updateDot(
 
 export async function deleteDot(dotId: string) {
   await caller();
-  await deleteBackendDot(dotId);
+  await deleteBackendAgent(dotId);
 }
 
 // ---------- Chat & Agent Execution ----------

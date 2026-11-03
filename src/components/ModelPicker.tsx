@@ -12,13 +12,13 @@ const strip = (id: string) => (id.startsWith(OPEN) ? id.slice(OPEN.length) : id.
 const label = strip;
 
 function hint(id: string): string | null {
-  if (id.startsWith(GROQ)) return "Groq · fast";
-  if (id.startsWith(AG)) return "Antigravity · Gemini";
-  if (id.startsWith(OPEN)) return "Open model · OpenRouter";
-  if (id.startsWith(NIM)) return "NIM model · NVIDIA";
-  if (/-pro\b/.test(id)) return "Strongest · slower";
-  if (/-nano\b/.test(id)) return "Fastest · cheapest";
-  if (/-mini\b/.test(id)) return "Fast · cheaper";
+  if (id.startsWith(GROQ)) return "Groq, fast";
+  if (id.startsWith(AG)) return "Antigravity, Gemini";
+  if (id.startsWith(OPEN)) return "Open model, OpenRouter";
+  if (id.startsWith(NIM)) return "NIM model, NVIDIA";
+  if (/-pro\b/.test(id)) return "Strongest, slower";
+  if (/-nano\b/.test(id)) return "Fastest, cheapest";
+  if (/-mini\b/.test(id)) return "Fast, cheaper";
   if (/codex/.test(id)) return "Coding";
   return null;
 }
@@ -73,13 +73,13 @@ export default function ModelPicker({
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className={`flex items-center gap-1.5 rounded-md border border-black/10 bg-card font-mono tracking-wide text-foreground/75 transition-colors hover:border-black/20 hover:text-foreground ${compact ? "h-8 px-2.5 text-[11px]" : "h-9 px-3 text-[12px]"}`}
+        className={`flex items-center gap-1.5 rounded-md border border-black/10 bg-card text-foreground/75 transition-colors hover:border-black/20 hover:text-foreground ${compact ? "h-8 px-2.5 text-[11px]" : "h-9 px-3 text-[12px]"}`}
         aria-haspopup="listbox"
         aria-expanded={open}
         title="Model this dot thinks with"
       >
         <Cpu className="size-3.5 text-foreground/45" strokeWidth={1.75} />
-        {value === null && allowDefault ? <span className="text-foreground/45">Default ·</span> : null}
+        {value === null && allowDefault ? <span className="text-foreground/45">Default:</span> : null}
         <span className="max-w-40 truncate">{current ? label(current) : "Loading…"}</span>
         <ChevronDown className={`size-3.5 text-foreground/40 transition-transform ${open ? "rotate-180" : ""}`} strokeWidth={1.75} />
       </button>
@@ -108,7 +108,7 @@ export default function ModelPicker({
               >
                 <span className="min-w-0 flex-1">
                   <span className={`block truncate text-[13px] ${o.id ? "font-mono" : ""}`}>{o.label}</span>
-                  {o.sub && <span className="block truncate font-mono text-[10px] tracking-wide text-foreground/45 uppercase">{o.sub}</span>}
+                  {o.sub && <span className="block truncate text-[11px] text-foreground/45">{o.sub}</span>}
                 </span>
                 {selected && <Check className="size-3.5 shrink-0 text-foreground" strokeWidth={2} />}
               </button>,

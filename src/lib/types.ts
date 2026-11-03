@@ -47,6 +47,9 @@ export type Dot = {
   createdAt: number;
 };
 
+/** Agent is the preferred name; Dot remains an alias while existing events migrate. */
+export type Agent = Dot;
+
 export type MessageRole = "user" | "dot" | "activity" | "card" | "system";
 
 export type CardKind = "approval" | "question" | "connect";

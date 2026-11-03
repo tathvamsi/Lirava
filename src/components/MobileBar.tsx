@@ -45,7 +45,7 @@ export function FloatingSidebarTrigger() {
       <button
         type="button"
         onClick={() => setSidebarCollapsed(false)}
-        className="flex size-8 items-center justify-center rounded-lg border border-black/10 bg-card/90 text-foreground/70 shadow-xs backdrop-blur-xs transition-all hover:border-black/25 hover:bg-card hover:text-foreground hover:shadow-sm"
+        className="flex size-8 items-center justify-center rounded-lg border border-black/10 bg-card/90 text-foreground/70 shadow-xs transition-colors hover:border-black/25 hover:bg-card hover:text-foreground"
         title="Open sidebar (Ctrl+B)"
         aria-label="Open sidebar"
       >
@@ -53,7 +53,7 @@ export function FloatingSidebarTrigger() {
       </button>
       <Link
         href="/"
-        className="flex size-8 items-center justify-center rounded-lg border border-black/10 bg-card/90 text-foreground/70 shadow-xs backdrop-blur-xs transition-all hover:border-black/25 hover:bg-card hover:text-foreground hover:shadow-sm"
+        className="flex size-8 items-center justify-center rounded-lg border border-black/10 bg-card/90 text-foreground/70 shadow-xs transition-colors hover:border-black/25 hover:bg-card hover:text-foreground"
         title="New chat"
         aria-label="New chat"
       >

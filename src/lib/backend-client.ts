@@ -7,7 +7,8 @@ export const BACKEND_URL =
 
 export async function backendFetch<T = any>(
   path: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
+  legacyPath?: string,
 ): Promise<T> {
   const url = `${BACKEND_URL.replace(/\/$/, "")}${path.startsWith("/") ? path : `/${path}`}`;
   const headers = {
@@ -15,10 +16,14 @@ export async function backendFetch<T = any>(
     ...(options.headers || {}),
   };
 
-  const res = await fetch(url, {
+  let res = await fetch(url, {
     ...options,
     headers,
   });
+  // Older backend deployments expose the same resources under /api/dots.
+  if (res.status === 404 && legacyPath) {
+    res = await fetch(`${BACKEND_URL.replace(/\/$/, "")}${legacyPath}`, { ...options, headers });
+  }
 
   if (!res.ok) {
     let errMsg = `Backend request failed: ${res.status} ${res.statusText}`;
@@ -39,7 +44,7 @@ export async function backendFetch<T = any>(
 
 // ---------------- Agent Execution ----------------
 export async function sendAgentMessage(
-  dotId: string,
+  agentId: string,
   text: string,
   userId?: string,
   conversationId?: string,
@@ -48,52 +53,61 @@ export async function sendAgentMessage(
 ) {
   return backendFetch("/api/agent/message", {
     method: "POST",
-    body: JSON.stringify({ dotId, text, userId, conversationId, messageId, attachments }),
+    body: JSON.stringify({ agentId, dotId: agentId, text, userId, conversationId, messageId, attachments }),
   });
 }
 
-export async function abortAgent(dotId: string) {
+export async function abortAgent(agentId: string) {
   return backendFetch("/api/agent/abort", {
     method: "POST",
-    body: JSON.stringify({ dotId }),
+    body: JSON.stringify({ agentId, dotId: agentId }),
   });
 }
 
-// ---------------- Dots ----------------
-export async function fetchDots(userId: string = ""): Promise<Dot[]> {
-  const data = await backendFetch<{ dots: Dot[] }>(`/api/dots?userId=${encodeURIComponent(userId)}`);
-  return data.dots || [];
+// ---------------- Agents (legacy server response names remain supported) ----------------
+export async function fetchAgents(userId: string = ""): Promise<Dot[]> {
+  const query = `?userId=${encodeURIComponent(userId)}`;
+  const data = await backendFetch<{ agents?: Dot[]; dots?: Dot[] }>(`/api/agents${query}`, {}, `/api/dots${query}`);
+  return data.agents ?? data.dots ?? [];
 }
 
-export async function fetchDot(id: string): Promise<Dot | null> {
+export async function fetchAgent(id: string): Promise<Dot | null> {
   try {
-    const data = await backendFetch<{ dot: Dot }>(`/api/dots/${encodeURIComponent(id)}`);
-    return data.dot || null;
+    const suffix = `/${encodeURIComponent(id)}`;
+    const data = await backendFetch<{ agent?: Dot; dot?: Dot }>(`/api/agents${suffix}`, {}, `/api/dots${suffix}`);
+    return data.agent ?? data.dot ?? null;
   } catch {
     return null;
   }
 }
 
-export async function createBackendDot(input: {
+export async function createBackendAgent(input: {
   name: string;
   purpose: string;
   instructions?: string;
   look: Look;
   userId?: string;
 }): Promise<Dot> {
-  const data = await backendFetch<{ dot: Dot }>("/api/dots", {
+  const data = await backendFetch<{ agent?: Dot; dot: Dot }>("/api/agents", {
     method: "POST",
     body: JSON.stringify(input),
-  });
-  return data.dot;
+  }, "/api/dots");
+  return data.agent ?? data.dot;
 }
 
-export async function deleteBackendDot(id: string): Promise<boolean> {
-  const data = await backendFetch<{ success: boolean }>(`/api/dots/${encodeURIComponent(id)}`, {
+export async function deleteBackendAgent(id: string): Promise<boolean> {
+  const suffix = `/${encodeURIComponent(id)}`;
+  const data = await backendFetch<{ success: boolean }>(`/api/agents${suffix}`, {
     method: "DELETE",
-  });
+  }, `/api/dots${suffix}`);
   return data.success;
 }
+
+// Existing routes and extensions can migrate independently.
+export const fetchDots = fetchAgents;
+export const fetchDot = fetchAgent;
+export const createBackendDot = createBackendAgent;
+export const deleteBackendDot = deleteBackendAgent;
 
 // ---------------- Conversations ----------------
 export async function fetchConversations(userId: string = "", dotId?: string): Promise<Conversation[]> {
@@ -127,10 +141,10 @@ export async function fetchConversation(id: string): Promise<{ conversation: Con
   }
 }
 
-export async function createBackendConversation(dotId: string, title?: string, userId?: string, id?: string, matterId?: string): Promise<Conversation> {
+export async function createBackendConversation(agentId: string, title?: string, userId?: string, id?: string, matterId?: string): Promise<Conversation> {
   const data = await backendFetch<{ conversation: Conversation }>("/api/conversations", {
     method: "POST",
-    body: JSON.stringify({ dotId, title, userId, id, matterId }),
+    body: JSON.stringify({ agentId, dotId: agentId, title, userId, id, matterId }),
   });
   return data.conversation;
 }

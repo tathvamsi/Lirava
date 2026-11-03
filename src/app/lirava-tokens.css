@@ -1,0 +1,38 @@
+/* Lirava foundation. Keep identical in soli-web and soli-admin. */
+:root {
+  --lirava-navy: oklch(22% 0.011 40);
+  --lirava-navy-secondary: oklch(29% 0.013 40);
+  --lirava-accent: oklch(74% 0.125 30);
+  --lirava-tertiary: oklch(94.5% 0.007 55);
+  --lirava-neutral: oklch(47% 0.013 45);
+  --lirava-action: oklch(22% 0.011 40);
+  --lirava-action-hover: oklch(29% 0.013 40);
+  --lirava-accent-hover: oklch(68% 0.14 30);
+  --lirava-accent-active: oklch(54% 0.165 29);
+  --lirava-accent-readable: oklch(48% 0.16 29);
+  --lirava-ivory: oklch(97% 0.006 55);
+  --lirava-white: oklch(98.8% 0.0045 80);
+  --lirava-text: oklch(21% 0.012 38);
+  --lirava-muted: oklch(47% 0.013 45);
+  --lirava-border: oklch(87% 0.009 55);
+  --lirava-charcoal: oklch(29% 0.013 40);
+  --lirava-success: oklch(55.5% 0.15 33);
+  --lirava-tint: oklch(91.5% 0.009 55);
+  --lirava-on-dark: oklch(96.5% 0.006 70);
+  --lirava-on-dark-muted: oklch(84% 0.01 65);
+  --lirava-paper-ink: oklch(23% 0.012 38);
+  --lirava-destructive: oklch(48% 0.18 28);
+  --lirava-warning: oklch(55% 0.13 72);
+  --lirava-focus: oklch(54% 0.17 30);
+  --lirava-desk: oklch(94.3% 0.008 64);
+  --lirava-radius-sm: 6px;
+  --lirava-radius-md: 6px;
+  --lirava-radius-lg: 8px;
+  --lirava-shadow: inset 0 1px 0 oklch(100% 0.005 80 / 90%), inset 0 -1px 0 oklch(32% 0.03 50 / 7%), 0 0 0 0.5px oklch(32% 0.03 50 / 22%), 6px 5px 10px -6px oklch(32% 0.03 50 / 30%);
+  --lirava-shadow-elevated: inset 0 1px 0 oklch(100% 0.005 80 / 90%), inset 0 -1px 0 oklch(32% 0.03 50 / 7%), 0 0 0 0.5px oklch(32% 0.03 50 / 22%), 12px 10px 18px -8px oklch(32% 0.03 50 / 30%);
+  --lirava-press-groove: inset 1px 1.5px 2px oklch(32% 0.03 50 / 16%), inset -1px -1px 0 oklch(100% 0.005 80 / 90%), 0 0 0 0.5px oklch(32% 0.03 50 / 20%);
+  --lirava-texture-cotton: url("/cotton.svg");
+  --lirava-texture-desk: url("/felt.svg");
+  --lirava-duration: 220ms;
+  --lirava-ease: cubic-bezier(.2, 0, 0, 1);
+}

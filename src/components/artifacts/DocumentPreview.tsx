@@ -16,7 +16,7 @@ const markdownComponents = {
     </div>
   ),
   th: ({ node, ...props }: ComponentPropsWithoutRef<"th"> & { node?: unknown }) => (
-    <th className="border-b border-black/10 bg-black/[0.03] px-3.5 py-2.5 font-semibold text-foreground/85 text-[12px] uppercase tracking-wider whitespace-nowrap" {...props} />
+    <th className="border-b border-black/10 bg-black/[0.03] px-3.5 py-2.5 font-semibold text-foreground/85 text-[12px] whitespace-nowrap" {...props} />
   ),
   td: ({ node, ...props }: ComponentPropsWithoutRef<"td"> & { node?: unknown }) => (
     <td className="border-b border-black/[0.06] px-3.5 py-2.5 text-foreground/90 align-top text-[13px] leading-relaxed" {...props} />
@@ -52,14 +52,14 @@ export function DocumentPreview({ artifact }: { artifact: DocumentArtifact }) {
     <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-background">
       {/* Top control bar */}
       <div className="flex shrink-0 items-center justify-between gap-2 overflow-x-auto border-b border-black/[0.08] bg-card px-3 sm:px-4 py-2 min-w-0 scrollbar-none">
-        <div className="flex items-center gap-1 rounded-lg border border-black/[0.08] bg-black/[0.03] p-0.5 shrink-0">
+        <div className="flex shrink-0 items-center gap-1">
           <button
             type="button"
             onClick={() => setMode("court_paper")}
-            className={`flex items-center gap-1.5 rounded-md px-2 sm:px-2.5 py-1 text-[12px] font-medium transition-colors ${
+            className={`flex items-center gap-1.5 border-b-2 px-2 sm:px-2.5 py-1 text-[12px] font-medium transition-colors ${
               mode === "court_paper"
-                ? "bg-card text-foreground shadow-xs"
-                : "text-foreground/60 hover:text-foreground"
+                ? "border-brand text-foreground"
+                : "border-transparent text-foreground/60 hover:text-foreground"
             }`}
           >
             <Scale className="size-3.5" />
@@ -69,10 +69,10 @@ export function DocumentPreview({ artifact }: { artifact: DocumentArtifact }) {
           <button
             type="button"
             onClick={() => setMode("markdown")}
-            className={`flex items-center gap-1.5 rounded-md px-2 sm:px-2.5 py-1 text-[12px] font-medium transition-colors ${
+            className={`flex items-center gap-1.5 border-b-2 px-2 sm:px-2.5 py-1 text-[12px] font-medium transition-colors ${
               mode === "markdown"
-                ? "bg-card text-foreground shadow-xs"
-                : "text-foreground/60 hover:text-foreground"
+                ? "border-brand text-foreground"
+                : "border-transparent text-foreground/60 hover:text-foreground"
             }`}
           >
             <BookOpen className="size-3.5" />
@@ -83,10 +83,10 @@ export function DocumentPreview({ artifact }: { artifact: DocumentArtifact }) {
             <button
               type="button"
               onClick={() => setMode("pdf_view")}
-              className={`flex items-center gap-1.5 rounded-md px-2 sm:px-2.5 py-1 text-[12px] font-medium transition-colors ${
+              className={`flex items-center gap-1.5 border-b-2 px-2 sm:px-2.5 py-1 text-[12px] font-medium transition-colors ${
                 mode === "pdf_view"
-                  ? "bg-card text-foreground shadow-xs"
-                  : "text-foreground/60 hover:text-foreground"
+                  ? "border-brand text-foreground"
+                  : "border-transparent text-foreground/60 hover:text-foreground"
               }`}
             >
               <FileText className="size-3.5" />
@@ -129,9 +129,9 @@ export function DocumentPreview({ artifact }: { artifact: DocumentArtifact }) {
             />
           </div>
         ) : mode === "court_paper" ? (
-          <div className="mx-auto w-full max-w-[760px] rounded-xl border border-black/10 bg-[#fdfcf9] px-4 py-6 sm:px-10 sm:py-12 text-[#1a1a1a] shadow-md font-serif overflow-hidden">
+          <div className="mx-auto w-full max-w-[760px] rounded-xl border border-black/10 bg-card px-4 py-6 sm:px-10 sm:py-12 text-paper-ink shadow-md font-serif overflow-hidden">
             {/* Document body rendered with authentic court formatting */}
-            <div className="court-paper-prose space-y-4 text-[14px] leading-[1.8] text-[#1c1c1c] overflow-hidden break-words">
+            <div className="court-paper-prose space-y-4 text-[14px] leading-[1.8] text-paper-ink overflow-hidden break-words">
               <Markdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
                 {artifact.content}
               </Markdown>
