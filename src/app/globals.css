@@ -1,5 +1,5 @@
-/* Hallmark · theme: Coral (by request) · genre: modern-minimal · posture: restrained · hero: kept · nav: kept · footer: kept · built: Hallmark · redesign: restyle · v2.0.0 */
-/* Coral restyle: warm paper, cotton stock, ink controls, and coral reserved for focus and settled states. */
+/* Hallmark · theme: Newsprint (catalogue) · genre: editorial · posture: restrained · hero: broadsheet front · nav: kept · footer: kept · built: Hallmark · redesign: full site · v2.0.0 */
+/* Newsprint restyle: pale paper, warm ink, ruled case records, dried-brick signal. */
 @import "tailwindcss";
 @import "./lirava-tokens.css";
 @plugin "@tailwindcss/typography";
@@ -24,8 +24,8 @@
 }
 
 @theme {
-  --font-sans: "General Sans", var(--font-inter), ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
-  --font-serif: "General Sans", var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Spectral", ui-serif, Georgia, serif;
+  --font-serif: "Zilla Slab", ui-serif, Georgia, serif;
   --font-mono: var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
   --leading-tight: 1.1;
@@ -164,9 +164,9 @@
   --soli-saffron: var(--lirava-accent);
   --soli-ivory: var(--lirava-ivory);
   --soli-body: var(--lirava-text);
-  --soli-display: "General Sans", var(--font-inter), "Noto Sans Devanagari", system-ui, sans-serif;
-  --soli-ui: "General Sans", var(--font-inter), "Noto Sans Devanagari", system-ui, sans-serif;
-  --soli-legal: var(--font-dm-serif), Georgia, "Noto Sans Devanagari", serif;
+  --soli-display: "Zilla Slab", ui-serif, Georgia, serif;
+  --soli-ui: "Spectral", ui-serif, Georgia, serif;
+  --soli-legal: "Spectral", ui-serif, Georgia, serif;
   --soli-mono: var(--font-jetbrains-mono), ui-monospace, "Noto Sans Devanagari", monospace;
   --soli-h1: clamp(2.6rem, 5.4vw, 5rem);
   --soli-h2: clamp(2.1rem, 4vw, 3.6rem);
@@ -184,13 +184,13 @@
 .soli-marketing h2,
 .soli-marketing .font-serif {
   font-family: var(--soli-display);
-  font-weight: 600;
+  font-weight: 700;
   font-optical-sizing: auto;
   text-wrap: balance;
 }
 .soli-marketing h1 { font-size: var(--soli-h1) !important; line-height: 1.02 !important; letter-spacing: -.02em !important; }
 .soli-marketing h2 { font-size: var(--soli-h2) !important; line-height: 1.08 !important; letter-spacing: -.015em !important; }
-.soli-marketing h3 { font-family: var(--soli-ui); font-size: clamp(1.25rem, 1.8vw, 1.5rem) !important; font-weight: 600; line-height: 1.25; }
+.soli-marketing h3 { font-family: var(--soli-display); font-size: clamp(1.25rem, 1.8vw, 1.5rem) !important; font-weight: 700; line-height: 1.25; }
 .soli-marketing p { max-width: 70ch; text-wrap: pretty; }
 .soli-scroll-progress { position: fixed; inset: 0 auto auto 0; z-index: 60; width: 100%; height: 2px; transform-origin: 0 50%; background: var(--lirava-accent); }
 .soli-nav { transition: background-color 200ms ease, backdrop-filter 200ms ease, box-shadow 200ms ease; }
@@ -198,10 +198,7 @@
 .soli-nav-scrolled { background: var(--card); backdrop-filter: blur(18px) saturate(150%); box-shadow: var(--lirava-shadow); }
 .soli-live-demo { position: absolute; inset: 0; z-index: 2; display: grid; grid-template-columns: 1.2fr .8fr; background: var(--card); }
 .soli-live-demo ~ * { visibility: hidden; }
-.soli-type-caret { display: inline-block; width: 2px; height: 1em; margin-left: 2px; vertical-align: -.12em; background: var(--lirava-accent); animation: soli-caret .8s steps(1) infinite; }
-.soli-reading { padding: .75rem 0; color: var(--lirava-accent-readable); font-size: .82rem; font-weight: 600; }
-.soli-source-active { border-color: var(--lirava-accent); }
-@keyframes soli-caret { 50% { opacity: 0; } }
+.soli-source-active { border-color: var(--lirava-border); }
 @media (max-width: 767px) { .soli-live-demo { grid-template-columns: 1fr; } .soli-live-demo aside, .soli-live-demo ~ aside { display: none; } }
 .soli-marketing a,
 .soli-marketing button,
@@ -222,15 +219,26 @@
   from { opacity: 0; transform: translateY(18px); }
   to { opacity: 1; transform: translateY(0); }
 }
-.soli-hero-layout { animation: soli-enter 700ms cubic-bezier(.2,.8,.2,1) both; }
+.soli-hero-layout { animation: none; }
+.soli-hero-preview::before {
+  content: "";
+  position: absolute;
+  inset: 7px -5px -7px 5px;
+  z-index: 0;
+  border: 1px solid var(--lirava-border);
+  border-radius: var(--lirava-radius-lg);
+  background-color: var(--lirava-white);
+  background-image: var(--lirava-texture-cotton);
+  box-shadow: var(--lirava-shadow);
+  transform: rotate(.18deg);
+}
+.soli-hero-preview > * { position: relative; z-index: 1; }
 
 @media (prefers-reduced-motion: reduce) {
   .soli-marketing *,
   .soli-marketing *::before,
   .soli-marketing *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .01ms !important; }
   .soli-marketing article { transform: none !important; }
-  .soli-type-caret,
-  .soli-reading,
   .soli-source-active { animation: none !important; }
 }
 
@@ -245,8 +253,8 @@
 }
 
 @keyframes page-rise {
-  from { opacity: 0; transform: translateY(16px) scale(0.992); filter: blur(8px); }
-  to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+  from { opacity: 0; transform: translateY(16px) scale(0.992); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 @keyframes soft-slide-right {
@@ -507,7 +515,7 @@
 }
 
 /* ==========================================================================
-   Landing Page Luxury Obsidian & Amber-Gold Scrollbar
+   Landing page Newsprint scrollbar
    ========================================================================== */
 
 .landing-scrollbar,
@@ -604,4 +612,13 @@
   background-image: var(--lirava-texture-cotton);
   color: var(--foreground);
 }
-.soli-marketing h1, .soli-marketing h2 { font-weight: 600; }
+.soli-marketing h1, .soli-marketing h2 { font-weight: 700; }
+.soli-marketing :where(.rounded-sm, .rounded-md, .rounded-lg, .rounded-xl, .rounded-2xl, .rounded-full) { border-radius: 0; }
+.soli-marketing :where(button, a).bg-action {
+  font-family: var(--soli-display);
+  font-weight: 700;
+  border-radius: 0;
+}
+.soli-marketing a:not(.bg-action) { text-decoration-color: var(--lirava-accent); text-underline-offset: .16em; }
+.soli-marketing a:not(.bg-action):hover { text-decoration-thickness: 2px; }
+.soli-hero-layout { border-top: 4px double var(--lirava-navy); }

@@ -1,11 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useEffect, useRef, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import {
   motion,
-  useInView,
-  useReducedMotion,
   useScroll,
   useSpring,
 } from "framer-motion";
@@ -82,11 +80,8 @@ const questions = [
   ],
 ] as const;
 
-const demoPrompts = [
-  "Does the record support a Section 138 NI Act notice challenge based on service?",
-  "What does the available record show about the limitation period?",
-  "Which source passage addresses the disputed delivery date?",
-] as const;
+const demoPrompt =
+  "Does the record support a Section 138 NI Act notice challenge based on service?";
 const demoAnswerText =
   "The available record does not establish non-service. Review the dispatch receipt and returned envelope before taking a final position.";
 
@@ -220,57 +215,8 @@ function Header() {
 }
 
 function ProductPreview() {
-  const previewRef = useRef<HTMLDivElement>(null);
-  const inView = useInView(previewRef, { amount: 0.35 });
-  const reducedMotion = useReducedMotion();
-  const [cycle, setCycle] = useState(0);
-  const [question, setQuestion] = useState<string>(demoPrompts[0]);
-  const [reading, setReading] = useState(false);
-  const [answerReady, setAnswerReady] = useState(true);
-  const [demoAnswer, setDemoAnswer] = useState(demoAnswerText);
-  useEffect(() => {
-    if (reducedMotion || !inView) return;
-    const prompt = demoPrompts[(cycle + 1) % demoPrompts.length];
-    const timers: number[] = [];
-    const later = (callback: () => void, delay: number) =>
-      timers.push(window.setTimeout(callback, delay));
-    later(() => {
-      setQuestion("");
-      setAnswerReady(false);
-      setDemoAnswer("");
-      setReading(true);
-      let cursor = 0;
-      const type = () => {
-        cursor += 1;
-        setQuestion(prompt.slice(0, cursor));
-        if (cursor < prompt.length) later(type, 18);
-        else
-          later(() => {
-            later(() => {
-              setReading(false);
-              const words = demoAnswerText.split(" ");
-              let word = 0;
-              const stream = () => {
-                word += 1;
-                setDemoAnswer(words.slice(0, word).join(" "));
-                setAnswerReady(true);
-                if (word < words.length) later(stream, 34);
-              };
-              stream();
-            }, 650);
-          }, 260);
-      };
-      type();
-    }, 2600);
-    later(
-      () => setCycle((value) => (value + 1) % demoPrompts.length),
-      2600 + prompt.length * 18 + 3600,
-    );
-    return () => timers.forEach(window.clearTimeout);
-  }, [cycle, inView, reducedMotion]);
   return (
     <div
-      ref={previewRef}
       className="relative mx-auto w-full rounded-lg border border-navy/15 bg-background p-3 shadow-elevated"
     >
       <div className="overflow-hidden rounded-md border border-navy/10 bg-card">
@@ -283,42 +229,38 @@ function ProductPreview() {
           </span>
         </div>
         <div className="relative grid gap-0 md:min-h-[360px] md:grid-cols-[1.35fr_0.65fr]">
-          <div className="soli-live-demo" aria-live="off">
+          <div className="soli-live-demo">
             <div className="p-5 sm:p-6">
               <p className="text-[12px] font-medium text-brand-readable">
                 Ask a question
               </p>
               <p className="mt-3 min-h-16 rounded-xl border border-navy/10 bg-background p-3 text-[13px] leading-relaxed text-foreground">
-                {question}
-                {!reducedMotion && !answerReady && (
-                  <span className="soli-type-caret" />
-                )}
+                {demoPrompt}
               </p>
               <div className="mt-5 border-t border-navy/10 pt-5">
                 <p className="text-[12px] font-medium text-brand-readable">
                   Lirava&apos;s answer
                 </p>
-                {reading ? (
-                  <div className="mt-3 soli-reading">
-                    Reading your case file…
+                <div>
+                  <p className="mt-2 text-[13px] leading-relaxed text-foreground">
+                    {demoAnswerText}
+                  </p>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <span className="rounded-full border border-brand/25 bg-highlight px-2.5 py-1 text-[10px] font-medium text-brand-readable">
+                      Notice.pdf, page 4
+                    </span>
+                    <span className="rounded-full border border-navy/15 bg-background px-2.5 py-1 text-[10px] font-medium text-muted">
+                      Case file, page 12
+                    </span>
                   </div>
-                ) : answerReady ? (
-                  <div className="motion-safe:animate-[page-rise_400ms_ease-out_both]">
-                    <p className="mt-2 text-[13px] leading-relaxed text-foreground">
-                      {demoAnswer}
-                    </p>
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      <span className="rounded-full border border-brand/25 bg-highlight px-2.5 py-1 text-[10px] font-medium text-brand-readable">
-                        Notice.pdf, page 4
-                      </span>
-                      <span className="rounded-full border border-navy/15 bg-background px-2.5 py-1 text-[10px] font-medium text-muted">
-                        Case file, page 12
-                      </span>
+                  <div className="mt-4 border-t border-border pt-3 md:hidden">
+                    <p className="text-[10px] font-medium text-foreground">Sources</p>
+                    <div className="mt-2 grid grid-cols-2 gap-3 text-[10px] leading-relaxed text-muted">
+                      <p><span className="block font-medium text-foreground">Notice.pdf</span>Page 4</p>
+                      <p><span className="block font-medium text-foreground">Case file</span>Page 12</p>
                     </div>
                   </div>
-                ) : (
-                  <div className="mt-3 h-16 rounded-lg bg-background/6 animate-pulse" />
-                )}
+                </div>
               </div>
             </div>
             <aside className="border-t border-navy/10 bg-navy p-5 text-white md:border-t-0 md:border-l">
@@ -327,7 +269,7 @@ function ProductPreview() {
               </p>
               <div className="mt-4 space-y-3">
                 <div
-                  className={`rounded-xl border border-white/10 bg-white/8 p-3 ${answerReady ? "soli-source-active" : ""}`}
+                  className="soli-source-active rounded-xl border border-white/10 bg-white/8 p-3"
                 >
                   <p className="text-[11px] font-semibold">Notice.pdf</p>
                   <p className="mt-1 text-[10px] leading-relaxed text-on-dark-muted">
@@ -346,65 +288,6 @@ function ProductPreview() {
               </p>
             </aside>
           </div>
-          <div className="p-5 sm:p-6">
-            <p className="text-[12px] font-medium text-brand-readable">
-              Ask a question
-            </p>
-            <p className="mt-3 rounded-xl border border-navy/10 bg-background p-3 text-[13px] leading-relaxed text-foreground">
-              Does the record support a Section 138 NI Act notice challenge
-              based on service?
-            </p>
-            <div className="mt-5 border-t border-navy/10 pt-5">
-              <p className="text-[12px] font-medium text-brand-readable">
-                Lirava&apos;s answer
-              </p>
-              {answerReady ? (
-                <div
-                  className="motion-safe:animate-[page-rise_400ms_ease-out_both]"
-                  aria-live="polite"
-                >
-                  <p className="mt-2 text-[13px] leading-relaxed text-foreground">
-                    The notice was addressed to the recorded business address.
-                    The available record does not establish non-service. Review
-                    the dispatch receipt and returned envelope before taking a
-                    final position.
-                  </p>
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    <span className="rounded-full border border-brand/25 bg-highlight px-2.5 py-1 text-[10px] font-medium text-brand-readable">
-                      Notice.pdf, page 4
-                    </span>
-                    <span className="rounded-full border border-navy/15 bg-background px-2.5 py-1 text-[10px] font-medium text-muted">
-                      Case file, page 12
-                    </span>
-                  </div>
-                </div>
-              ) : (
-                <div className="mt-3 h-16 rounded-lg bg-background/6 animate-pulse" />
-              )}
-            </div>
-          </div>
-          <aside className="border-t border-navy/10 bg-navy p-5 text-white md:border-t-0 md:border-l">
-            <p className="text-[11px] font-medium text-on-dark">
-              Sources
-            </p>
-            <div className="mt-4 space-y-3">
-              <div className="rounded-xl border border-white/10 bg-white/8 p-3">
-                <p className="text-[11px] font-semibold">Notice.pdf</p>
-                <p className="mt-1 text-[10px] leading-relaxed text-on-dark-muted">
-                  Page 4: Dispatch details and address.
-                </p>
-              </div>
-              <div className="rounded-xl border border-white/10 bg-white/8 p-3">
-                <p className="text-[11px] font-semibold">Case file</p>
-                <p className="mt-1 text-[10px] leading-relaxed text-on-dark-muted">
-                  Page 12: Correspondence timeline.
-                </p>
-              </div>
-            </div>
-            <p className="mt-5 text-[10px] leading-relaxed text-on-dark-muted">
-              Sources stay visible with the answer.
-            </p>
-          </aside>
         </div>
       </div>
     </div>
@@ -550,9 +433,9 @@ export default function MarketingSite() {
                 <div className="mt-6 flex flex-wrap gap-3">
                   <a
                     href="#waitlist"
-                    className="inline-flex h-12 items-center gap-2 rounded-lg bg-action px-6 text-[15px] font-semibold text-on-dark"
+                    className="inline-flex h-12 items-center rounded-lg bg-action px-6 text-[15px] font-semibold text-on-dark"
                   >
-                    Request early access <ArrowRight className="size-4" />
+                    Request early access
                   </a>
                   <a
                     href="#how-it-works"
@@ -560,6 +443,11 @@ export default function MarketingSite() {
                   >
                     See how it works
                   </a>
+                </div>
+                <div aria-label="Supported files" className="mt-5 flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-muted">
+                  <span>PDF case files</span>
+                  <span>DOCX drafts</span>
+                  <span>Scanned judgments</span>
                 </div>
               </div>
             </div>

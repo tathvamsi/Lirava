@@ -1,12 +1,15 @@
 import type { NextConfig } from "next";
 
 const backend = process.env.BACKEND_URL || "http://localhost:4000";
+const isVercel = Boolean(process.env.VERCEL);
 
 const nextConfig: NextConfig = {
-  // The desktop app ships .next/standalone: a minimal server.js plus only the node_modules it needs.
-  output: "standalone",
-  // Runtime data is found through process.cwd(), so tracing would copy it in. It must never ship.
-  outputFileTracingExcludes: { "*": [".data/**", ".env*", ".gstack/**", "dist/**", "scripts/**"] },
+  // Docker / self-hosted environments need standalone output; Vercel handles its own serverless bundling.
+  ...(isVercel ? {} : { output: "standalone" }),
+  // Prevent runtime/local data from leaking into traces. Anchored to avoid matching node_modules/next/dist/**.
+  outputFileTracingExcludes: {
+    "*": ["./.data/**", "./.env*", "./.gstack/**", "./scripts/**"],
+  },
   // The floating dev badge sits on top of the sidebar's Settings link.
   devIndicators: false,
   async rewrites() {

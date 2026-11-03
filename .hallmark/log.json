@@ -1,6 +1,94 @@
 [
  {
   "mode": "redesign",
+  "depth": "full",
+  "scope": "component",
+  "theme": "newsprint",
+  "shape": "lawyer desk workflow",
+  "axes": [
+   "matter-desk",
+   "source-to-answer",
+   "state-driven-motion"
+  ],
+  "hero": "lawyer desk scene with live cited-answer console",
+  "nav": "kept",
+  "footer": "kept",
+  "imagery": "product UI and document props",
+  "photos": [],
+  "entry": "2026-11-03 hero desk workflow redesign",
+  "fingerprint": "lirava-newsprint-lawyer-desk-workflow",
+  "sections": [
+   "hero"
+  ],
+  "signature": "files to cited answer on one legal desk",
+  "waived": [
+   "Hallmark render tier unavailable; Chrome captures supplied"
+  ],
+  "prompt": "Redesign the hero as an animated lawyer office and AI paralegal workflow",
+  "date": "2026-11-03"
+ },
+ {
+  "mode": "redesign",
+  "depth": "full",
+  "scope": "site",
+  "theme": "newsprint",
+  "shape": "broadsheet front",
+  "axes": [
+   "ruled-case-record",
+   "live-docket",
+   "brick-signal"
+  ],
+  "hero": "stage posture with cited-answer docket",
+  "nav": "kept",
+  "footer": "kept",
+  "imagery": "live product UI",
+  "photos": [],
+  "entry": "2026-11-03 Newsprint court-desk restyle",
+  "fingerprint": "lirava-newsprint-ruled-cited-answer",
+  "sections": [
+   "marketing",
+   "auth",
+   "chat",
+   "workspace",
+   "admin"
+  ],
+  "signature": "ruled cited-answer record",
+  "waived": [
+   "Hallmark render tier unavailable; Chrome captures supplied"
+  ],
+  "prompt": "Lively court or lawyer desk theme across the platform",
+  "date": "2026-11-03"
+ },
+ {
+  "mode": "redesign",
+  "depth": "full",
+  "scope": "component",
+  "theme": "coral",
+  "shape": "desk docket",
+  "axes": [
+   "headline-register",
+   "full-width-docket",
+   "coral-signal"
+  ],
+  "hero": "counter posture with wide cited-answer workspace",
+  "nav": "kept",
+  "footer": "kept",
+  "imagery": "live product UI",
+  "photos": [],
+  "entry": "2026-11-03 full hero redesign",
+  "fingerprint": "lirava-coral-desk-docket-hero",
+  "sections": [
+   "hero"
+  ],
+  "signature": "full-width cited-answer legal docket",
+  "waived": [
+   "Hallmark render tier unavailable; Playwright captures supplied"
+  ],
+  "prompt": "Full hero section redesign",
+  "date": "2026-11-03"
+ },
+ {
+  "mode": "redesign",
   "depth": "restyle",
   "scope": "site",
   "theme": "coral",
