@@ -15,13 +15,13 @@ export function InformationPage({
       <header className="border-b border-navy/10 bg-background">
         <div className="mx-auto flex h-18 max-w-5xl items-center justify-between px-4 sm:px-6">
           <Link href="/" className="flex items-center gap-2">
-            <span className="flex size-8 items-center justify-center rounded-lg bg-navy text-background">
+            <span className="flex size-8 items-center justify-center rounded-lg bg-navy text-on-dark">
               <Scale className="size-4" />
             </span>
-            <span className="font-serif text-[22px] font-semibold">Soli</span>
+            <span className="font-serif text-[22px] font-semibold">Lirava</span>
           </Link>
           <Link href="/" className="text-[13px] font-semibold text-brand">
-            Back to Soli
+            Back to Lirava
           </Link>
         </div>
       </header>

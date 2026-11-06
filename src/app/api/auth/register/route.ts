@@ -1,15 +1,13 @@
 import { NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
-import { db } from "@/db";
-import { users } from "@/db/schema";
+import { cookies } from "next/headers";
 import {
   checkSignupAccess,
-  createSession,
-  hashPassword,
-  isAdminEmail,
   signupPolicy,
   signupSchema,
+  SESSION_COOKIE_NAME,
 } from "@/lib/auth";
+import { registerBackend } from "@/lib/backend-client";
+import { env } from "@/env";
 
 interface SignupRequestBody {
   name?: unknown;
@@ -43,48 +41,43 @@ export async function POST(request: Request): Promise<NextResponse> {
         error: "Invalid signup details.",
         issues: parsed.error.flatten().fieldErrors,
       },
-      { status: 400 },
+      { status: 400 }
     );
   }
 
   const { name, email, password, inviteCode } = parsed.data;
 
-  // Gate first: same response whether or not the email is registered.
+  // Gate first: verify invite code policy
   const gateError = checkSignupAccess(email, inviteCode);
   if (gateError) {
     return NextResponse.json({ error: gateError }, { status: 403 });
   }
 
-  const existing = await db
-    .select({ id: users.id })
-    .from(users)
-    .where(eq(users.email, email))
-    .limit(1);
-  if (existing.length > 0) {
-    return NextResponse.json(
-      { error: "An account with this email already exists. Try logging in instead." },
-      { status: 409 },
-    );
-  }
-
-  const passwordHash = await hashPassword(password);
-  const role = isAdminEmail(email) ? "admin" : "user";
-  const [user] = await db
-    .insert(users)
-    .values({ name, email, passwordHash, role })
-    .returning({
-      id: users.id,
-      name: users.name,
-      email: users.email,
-      role: users.role,
+  try {
+    // Register user via standalone soli-backend
+    const authRes = await registerBackend({
+      name,
+      email,
+      password,
+      inviteCode,
     });
-  if (!user) {
+
+    // Set secure HTTP-only session cookie
+    const store = await cookies();
+    store.set(SESSION_COOKIE_NAME, authRes.token, {
+      httpOnly: true,
+      secure: env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: env.SESSION_MAX_AGE_SECONDS,
+    });
+
+    return NextResponse.json({ user: authRes.user }, { status: 201 });
+  } catch (err: any) {
+    const status = err.message.includes("already exists") ? 409 : 400;
     return NextResponse.json(
-      { error: "Failed to create account." },
-      { status: 500 },
+      { error: err.message || "Failed to create account." },
+      { status }
     );
   }
-
-  await createSession(user.id);
-  return NextResponse.json({ user }, { status: 201 });
 }

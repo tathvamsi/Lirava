@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   motion,
   useScroll,
@@ -33,7 +33,7 @@ const features = [
   [
     ShieldCheck,
     "Plain about uncertainty",
-    "If the available material does not support an answer, Soli says so.",
+    "If the available material does not support an answer, Lirava says so.",
   ],
   [
     BookOpen,
@@ -59,12 +59,12 @@ const features = [
 
 const questions = [
   [
-    "How does Soli handle accuracy?",
-    "Soli is designed to show the source material behind an answer. Lawyers can inspect the originating file, page, and passage before relying on it.",
+    "How does Lirava handle accuracy?",
+    "Lirava is designed to show the source material behind an answer. Lawyers can inspect the originating file, page, and passage before relying on it.",
   ],
   [
     "What happens when the material does not support an answer?",
-    "Soli should say that it cannot ground the answer in the available library instead of presenting an unsupported conclusion.",
+    "Lirava should say that it cannot ground the answer in the available library instead of presenting an unsupported conclusion.",
   ],
   [
     "Who can see uploaded files?",
@@ -75,8 +75,8 @@ const questions = [
     "The knowledge base is structured around Indian statutes with exact text and provenance. Case-law coverage is being expanded.",
   ],
   [
-    "Does Soli provide legal advice?",
-    "No. Soli assists legal professionals with research and legal work. A qualified lawyer remains responsible for analysis, advice, and filing decisions.",
+    "Does Lirava provide legal advice?",
+    "No. Lirava assists legal professionals with research and legal work. A qualified lawyer remains responsible for analysis, advice, and filing decisions.",
   ],
 ] as const;
 
@@ -87,7 +87,7 @@ const demoAnswerText =
 
 function Mark() {
   return (
-    <span className="flex size-9 items-center justify-center rounded-xl bg-navy text-[15px] font-serif font-semibold text-background">
+    <span className="flex size-9 items-center justify-center rounded-xl bg-navy text-[15px] font-serif font-semibold text-on-dark">
       L
     </span>
   );
@@ -163,12 +163,6 @@ function Header() {
           >
             Log in
           </Link>
-          <Link
-            href="#waitlist"
-            className="inline-flex h-10 items-center rounded-lg bg-action px-4 text-[13px] font-semibold text-white transition-colors hover:bg-action-hover"
-          >
-            Join the waitlist
-          </Link>
         </div>
         <button
           type="button"
@@ -200,13 +194,6 @@ function Header() {
             >
               Log in
             </Link>
-            <Link
-              href="#waitlist"
-              onClick={() => setOpen(false)}
-              className="rounded-lg bg-action px-3 py-2.5 text-center text-[14px] font-semibold text-white"
-            >
-              Join the waitlist
-            </Link>
           </nav>
         </div>
       )}
@@ -228,7 +215,7 @@ function ProductPreview() {
             Private matter
           </span>
         </div>
-        <div className="relative grid gap-0 md:min-h-[360px] md:grid-cols-[1.35fr_0.65fr]">
+        <div className="relative grid min-h-[360px] gap-0 md:grid-cols-[1.35fr_0.65fr]">
           <div className="soli-live-demo">
             <div className="p-5 sm:p-6">
               <p className="text-[12px] font-medium text-brand-readable">
@@ -294,126 +281,6 @@ function ProductPreview() {
   );
 }
 
-function Waitlist() {
-  const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">(
-    "idle",
-  );
-  const [message, setMessage] = useState("");
-  async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setStatus("sending");
-    const form = new FormData(event.currentTarget);
-    const response = await fetch("/api/waitlist", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(Object.fromEntries(form)),
-    });
-    const body = await response.json();
-    if (response.ok) {
-      setStatus("sent");
-      setMessage(body.message);
-      event.currentTarget.reset();
-    } else {
-      setStatus("error");
-      setMessage(body.error || "Please check the form and try again.");
-    }
-  }
-  const input =
-    "h-11 w-full rounded-lg border border-navy/15 bg-card px-3 text-[14px] text-foreground outline-none transition focus:border-brand focus:ring-4 focus:ring-brand/10";
-  return (
-    <section id="waitlist" className="bg-background py-20 sm:py-28">
-      <div className="mx-auto grid max-w-5xl gap-10 px-4 sm:px-6 lg:grid-cols-[0.8fr_1.2fr] lg:px-8">
-        <div>
-          <h2 className="font-serif text-[38px] leading-[1.04] tracking-[-0.04em] text-foreground sm:text-[52px]">
-            Tell us about your practice.
-          </h2>
-          <p className="mt-5 max-w-md text-[16px] leading-relaxed text-muted">
-            We are onboarding legal teams thoughtfully. Share the kind of work
-            you do and we will be in touch.
-          </p>
-        </div>
-        <form
-          onSubmit={submit}
-          className="surface p-5 shadow-elevated sm:p-7"
-        >
-          <div className="grid gap-4 sm:grid-cols-2">
-            <label className="text-[12px] font-semibold text-foreground">
-              Name
-              <input required name="name" autoComplete="name" className={`mt-1.5 ${input}`} />
-            </label>
-            <label className="text-[12px] font-semibold text-foreground">
-              Work email
-              <input
-                required
-                name="email"
-                type="email"
-                autoComplete="email"
-                className={`mt-1.5 ${input}`}
-              />
-            </label>
-            <label className="text-[12px] font-semibold text-foreground">
-              Firm or organisation
-              <input required name="firm" autoComplete="organization" className={`mt-1.5 ${input}`} />
-            </label>
-            <label className="text-[12px] font-semibold text-foreground">
-              Role
-              <input
-                required
-                name="role"
-                autoComplete="organization-title"
-                placeholder="Advocate, counsel, partner…"
-                className={`mt-1.5 ${input}`}
-              />
-            </label>
-            <label className="text-[12px] font-semibold text-foreground">
-              Practice area
-              <input
-                name="practiceArea"
-                autoComplete="off"
-                placeholder="Optional"
-                className={`mt-1.5 ${input}`}
-              />
-            </label>
-            <label className="text-[12px] font-semibold text-foreground">
-              Team size
-              <select
-                required
-                name="teamSize"
-                autoComplete="off"
-                defaultValue=""
-                className={`mt-1.5 ${input}`}
-              >
-                <option value="" disabled>
-                  Select team size
-                </option>
-                <option>1</option>
-                <option>2 to 10</option>
-                <option>11 to 50</option>
-                <option>51+</option>
-              </select>
-            </label>
-          </div>
-          <button
-            disabled={status === "sending"}
-            className="mt-5 inline-flex h-11 items-center gap-2 rounded-lg bg-action px-5 text-[14px] font-semibold text-white disabled:opacity-60"
-          >
-            {status === "sending" ? "Sending…" : "Request early access"}
-            <ArrowRight className="size-4" />
-          </button>
-          {message && (
-            <p
-              role="status"
-              className={`mt-3 text-[13px] ${status === "sent" ? "text-emerald-700" : "text-red-700"}`}
-            >
-              {message}
-            </p>
-          )}
-        </form>
-      </div>
-    </section>
-  );
-}
-
 export default function MarketingSite() {
   return (
     <div className="soli-marketing min-h-screen bg-background text-foreground">
@@ -421,37 +288,35 @@ export default function MarketingSite() {
       <Header />
       <main>
         <section className="desk relative overflow-hidden text-foreground">
-          <div className="soli-hero-layout relative mx-auto max-w-7xl px-4 pt-14 pb-12 sm:px-6 sm:pt-16 lg:px-8 lg:pt-14 lg:pb-16">
-            <div className="grid items-end gap-8 lg:grid-cols-[minmax(0,1.55fr)_minmax(300px,0.65fr)] lg:gap-16">
-              <h1 className="soli-hero-title max-w-[860px] font-serif text-balance">
+          <div className="soli-hero-layout relative mx-auto max-w-7xl px-4 pt-14 pb-12 sm:px-6 sm:pt-16 lg:px-8 lg:pt-16 lg:pb-16">
+            <div className="mx-auto max-w-4xl text-center">
+              <h1 className="soli-hero-title mx-auto max-w-[900px] font-serif text-balance">
                 {marketing.tagline}
               </h1>
-              <div className="soli-hero-copy border-l border-border pl-5 sm:pl-6">
-                <p className="max-w-sm text-[18px] leading-[1.65] text-muted">
-                  Built for Indian litigation, with pinpoint citations from your case files.
-                </p>
-                <div className="mt-6 flex flex-wrap gap-3">
-                  <a
-                    href="#waitlist"
-                    className="inline-flex h-12 items-center rounded-lg bg-action px-6 text-[15px] font-semibold text-on-dark"
-                  >
-                    Request early access
-                  </a>
-                  <a
-                    href="#how-it-works"
-                    className="inline-flex h-12 items-center rounded-lg border border-border bg-card px-6 text-[15px] font-medium text-foreground shadow-elevated"
-                  >
-                    See how it works
-                  </a>
-                </div>
-                <div aria-label="Supported files" className="mt-5 flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-muted">
-                  <span>PDF case files</span>
-                  <span>DOCX drafts</span>
-                  <span>Scanned judgments</span>
-                </div>
+              <p className="mx-auto mt-6 max-w-2xl text-[17px] leading-[1.65] text-muted sm:text-[18px]">
+                From case files to court-ready drafts, Lirava helps Indian lawyers research, reason, and prepare with citations grounded in their documents.
+              </p>
+              <div className="mt-7 flex flex-wrap justify-center gap-3">
+                <Link
+                  href="/login"
+                  className="inline-flex h-12 items-center rounded-lg bg-action px-6 text-[15px] font-semibold text-on-dark"
+                >
+                  Open Lirava
+                </Link>
+                <a
+                  href="#how-it-works"
+                  className="inline-flex h-12 items-center rounded-lg border border-border bg-card px-6 text-[15px] font-medium text-foreground shadow-elevated"
+                >
+                  See how it works
+                </a>
+              </div>
+              <div aria-label="Supported files" className="mt-5 flex flex-wrap justify-center gap-x-5 gap-y-1 text-[12px] text-muted">
+                <span>PDF case files</span>
+                <span>DOCX drafts</span>
+                <span>Scanned judgments</span>
               </div>
             </div>
-            <div className="soli-hero-preview relative mt-10 sm:mt-12">
+            <div className="soli-hero-preview relative mx-auto mt-12 max-w-6xl sm:mt-14">
               <ProductPreview />
             </div>
           </div>
@@ -489,14 +354,14 @@ export default function MarketingSite() {
               </h2>
             </div>
             <div className="space-y-5 text-[16px] leading-relaxed text-muted">
-              <p>
+                <p>
                 Litigation teams spend hours locating the right file, checking
                 the exact provision, and rebuilding context before a draft can
                 even begin.
               </p>
               <p>
                 Generic AI can make that harder when it produces a confident
-                answer without a source. Soli keeps the underlying material in
+                answer without a source. Lirava keeps the underlying material in
                 view, so the lawyer can verify the work.
               </p>
             </div>
@@ -577,7 +442,7 @@ export default function MarketingSite() {
                 Exact statute text, with a clear trail back to its source.
               </h2>
               <p className="mt-5 text-[16px] leading-relaxed text-on-dark-muted">
-                Soli structures statutes so a legal team can navigate from an
+                Lirava structures statutes so a legal team can navigate from an
                 Act to the relevant chapter, section, sub-section, proviso, or
                 explanation.
               </p>
@@ -622,7 +487,7 @@ export default function MarketingSite() {
                 Legal work should remain within the right workspace.
               </h2>
               <p className="mt-5 text-[16px] leading-relaxed text-muted">
-                Soli separates a firm’s shared library from each lawyer’s
+                Lirava separates a firm’s shared library from each lawyer’s
                 private workspace. Your team decides what is shared; private
                 uploads remain private.
               </p>
@@ -683,7 +548,7 @@ export default function MarketingSite() {
                     ))}
                   </ul>
                   <a
-                    href="#waitlist"
+                    href={`mailto:${marketing.contactEmail}`}
                     className="mt-7 inline-flex text-[14px] font-semibold text-brand"
                   >
                     Contact us <ArrowRight className="ml-2 size-4" />
@@ -713,7 +578,6 @@ export default function MarketingSite() {
             </div>
           </div>
         </section>
-        <Waitlist />
       </main>
       <footer className="bg-navy text-on-dark-muted">
         <div className="mx-auto grid max-w-7xl gap-10 px-4 py-12 sm:grid-cols-2 sm:px-6 lg:grid-cols-[1.6fr_repeat(3,1fr)] lg:px-8">
@@ -741,7 +605,6 @@ export default function MarketingSite() {
             </p>
             <div className="mt-4 grid gap-2 text-[13px]">
               <a href="#faq">FAQ</a>
-              <a href="#waitlist">Waitlist</a>
               <a href={`mailto:${marketing.contactEmail}`}>Contact</a>
             </div>
           </div>
@@ -758,7 +621,7 @@ export default function MarketingSite() {
         </div>
         <div className="border-t border-white/10">
           <p className="mx-auto max-w-7xl px-4 py-5 text-[12px] sm:px-6 lg:px-8">
-            © 2026 Soli. AI assistance for legal professionals; not legal
+            © 2026 Lirava. AI assistance for legal professionals; not legal
             advice.
           </p>
         </div>

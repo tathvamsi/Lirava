@@ -55,8 +55,8 @@ export async function createSession(userId: string): Promise<void> {
 }
 
 /**
- * Secure session check: verifies the JWT signature/expiry AND that the
- * session row still exists and has not expired (supports logout revocation).
+ * Secure session check: verifies session via standalone soli-backend,
+ * falling back to local DB if backend is starting up.
  */
 export async function getSessionUser(): Promise<SessionUser | null> {
   const store = await cookies();
@@ -66,9 +66,23 @@ export async function getSessionUser(): Promise<SessionUser | null> {
   const claims = await verifySessionToken(token, env.SESSION_SECRET);
   if (!claims) return null;
 
-  let rows;
+  // 1. Verify via standalone backend
   try {
-    rows = await db
+    const { getBackendUser } = await import("@/lib/backend-client");
+    const user = await getBackendUser(token);
+    if (user) {
+      return {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role === "admin" ? "admin" : "user",
+      };
+    }
+  } catch {}
+
+  // 2. Fallback to direct DB query if needed
+  try {
+    const rows = await db
       .select({
         id: users.id,
         name: users.name,
@@ -85,18 +99,14 @@ export async function getSessionUser(): Promise<SessionUser | null> {
         ),
       )
       .limit(1);
-  } catch (err) {
-    // DrizzleQueryError hides the Postgres cause; log it in dev so transient
-    // pooler/cold-start failures are diagnosable, then rethrow.
-    console.error("getSessionUser query failed:", err instanceof Error ? (err.cause ?? err.message) : err);
-    throw err;
-  }
-  const [row] = rows;
 
-  if (!row) return null;
-  // The check constraint guarantees one of the two values; narrow the type.
-  const role: UserRole = row.role === "admin" ? "admin" : "user";
-  return { id: row.id, name: row.name, email: row.email, role };
+    const [row] = rows;
+    if (!row) return null;
+    const role: UserRole = row.role === "admin" ? "admin" : "user";
+    return { id: row.id, name: row.name, email: row.email, role };
+  } catch {
+    return null;
+  }
 }
 
 /** Use at the top of protected pages; redirects anonymous users to /login. */
@@ -122,10 +132,16 @@ export async function destroySession(): Promise<void> {
   const store = await cookies();
   const token = store.get(SESSION_COOKIE_NAME)?.value;
   if (token) {
-    const claims = await verifySessionToken(token, env.SESSION_SECRET);
-    if (claims) {
-      await db.delete(sessions).where(eq(sessions.id, claims.sessionId));
-    }
+    try {
+      const { logoutBackend } = await import("@/lib/backend-client");
+      await logoutBackend(token);
+    } catch {}
+    try {
+      const claims = await verifySessionToken(token, env.SESSION_SECRET);
+      if (claims) {
+        await db.delete(sessions).where(eq(sessions.id, claims.sessionId));
+      }
+    } catch {}
   }
   store.delete(SESSION_COOKIE_NAME);
 }

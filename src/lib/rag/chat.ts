@@ -107,7 +107,7 @@ export async function planRagChat(
     const template = findTemplateForQuery(parsed.data.question);
     if (template) {
       const draftingSystem =
-        `You are Soli, a specialized Indian legal AI paralegal. ` +
+        `You are Lirava, a specialized Indian legal AI paralegal. ` +
         `The user has requested a legal paper or court petition draft. ` +
         `Use the standard courtroom template below to generate a formal, court-ready draft with complete cause titles, grounds, precedents, prayer, and verification clauses.\n\n` +
         `Template: ${template.title}\nAct: ${template.act}\nSections: ${template.sections.join(", ")}\n` +

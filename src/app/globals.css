@@ -9,10 +9,10 @@
   --card: var(--lirava-white);
   --popover: var(--lirava-white);
   --foreground: var(--lirava-text);
-  --brand: var(--lirava-navy);
-  --brand-hover: var(--lirava-action-hover);
-  --brand-active: var(--lirava-navy-secondary);
-  --brand-readable: var(--lirava-navy-secondary);
+  --brand: var(--lirava-accent);
+  --brand-hover: var(--lirava-accent-hover);
+  --brand-active: var(--lirava-accent-active);
+  --brand-readable: var(--lirava-accent-readable);
   --highlight: var(--lirava-tint);
   --highlight-foreground: var(--lirava-text);
   --border: var(--lirava-border);
@@ -20,12 +20,12 @@
   --destructive: var(--lirava-destructive);
   --success: var(--lirava-success);
   --warning: var(--lirava-warning);
-  color-scheme: light;
+  color-scheme: dark;
 }
 
 @theme {
-  --font-sans: "Spectral", ui-serif, Georgia, serif;
-  --font-serif: "Zilla Slab", ui-serif, Georgia, serif;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
   --leading-tight: 1.1;
@@ -164,9 +164,9 @@
   --soli-saffron: var(--lirava-accent);
   --soli-ivory: var(--lirava-ivory);
   --soli-body: var(--lirava-text);
-  --soli-display: "Zilla Slab", ui-serif, Georgia, serif;
-  --soli-ui: "Spectral", ui-serif, Georgia, serif;
-  --soli-legal: "Spectral", ui-serif, Georgia, serif;
+  --soli-display: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --soli-ui: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --soli-legal: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --soli-mono: var(--font-jetbrains-mono), ui-monospace, "Noto Sans Devanagari", monospace;
   --soli-h1: clamp(2.6rem, 5.4vw, 5rem);
   --soli-h2: clamp(2.1rem, 4vw, 3.6rem);
@@ -192,11 +192,12 @@
 .soli-marketing h2 { font-size: var(--soli-h2) !important; line-height: 1.08 !important; letter-spacing: -.015em !important; }
 .soli-marketing h3 { font-family: var(--soli-display); font-size: clamp(1.25rem, 1.8vw, 1.5rem) !important; font-weight: 700; line-height: 1.25; }
 .soli-marketing p { max-width: 70ch; text-wrap: pretty; }
+.soli-marketing .bg-white { background-color: var(--card) !important; }
 .soli-scroll-progress { position: fixed; inset: 0 auto auto 0; z-index: 60; width: 100%; height: 2px; transform-origin: 0 50%; background: var(--lirava-accent); }
 .soli-nav { transition: background-color 200ms ease, backdrop-filter 200ms ease, box-shadow 200ms ease; }
 .soli-nav-top { background: var(--card); }
 .soli-nav-scrolled { background: var(--card); backdrop-filter: blur(18px) saturate(150%); box-shadow: var(--lirava-shadow); }
-.soli-live-demo { position: absolute; inset: 0; z-index: 2; display: grid; grid-template-columns: 1.2fr .8fr; background: var(--card); }
+.soli-live-demo { position: absolute; inset: 0; z-index: 2; display: grid; min-height: 360px; grid-template-columns: 1.2fr .8fr; background: var(--card); }
 .soli-live-demo ~ * { visibility: hidden; }
 .soli-source-active { border-color: var(--lirava-border); }
 @media (max-width: 767px) { .soli-live-demo { grid-template-columns: 1fr; } .soli-live-demo aside, .soli-live-demo ~ aside { display: none; } }
@@ -613,12 +614,12 @@
   color: var(--foreground);
 }
 .soli-marketing h1, .soli-marketing h2 { font-weight: 700; }
-.soli-marketing :where(.rounded-sm, .rounded-md, .rounded-lg, .rounded-xl, .rounded-2xl, .rounded-full) { border-radius: 0; }
+.soli-marketing :where(.rounded-sm, .rounded-md, .rounded-lg, .rounded-xl, .rounded-2xl, .rounded-full) { border-radius: var(--lirava-radius-md); }
 .soli-marketing :where(button, a).bg-action {
   font-family: var(--soli-display);
   font-weight: 700;
-  border-radius: 0;
+  border-radius: var(--lirava-radius-md);
 }
 .soli-marketing a:not(.bg-action) { text-decoration-color: var(--lirava-accent); text-underline-offset: .16em; }
 .soli-marketing a:not(.bg-action):hover { text-decoration-thickness: 2px; }
-.soli-hero-layout { border-top: 4px double var(--lirava-navy); }
+.soli-hero-layout { border-top: 1px solid var(--border); }

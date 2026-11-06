@@ -103,8 +103,8 @@ export function cleanDocumentContent(rawText: string): string {
 
   // Strip any synthetic headers or watermarks if present
   cleaned = cleaned
-    .replace(/^(?:#+\s*|\*\*\s*)?(?:SOLI COURT DRAFT|INDIAN STATUTORY JURISDICTION)[^\n\r]*\r?\n+/gim, "")
-    .replace(/(?:—+\s*)?(?:End of Petition\s*\/)?\s*Drafted with Soli[^\n\r]*/gim, "")
+    .replace(/^(?:#+\s*|\*\*\s*)?(?:LIRAVA COURT DRAFT|INDIAN STATUTORY JURISDICTION)[^\n\r]*\r?\n+/gim, "")
+    .replace(/(?:—+\s*)?(?:End of Petition\s*\/)?\s*Drafted with Lirava[^\n\r]*/gim, "")
     .trim();
 
   // If cleaning resulted in something too short (< 100 chars), fall back to original trimmed text

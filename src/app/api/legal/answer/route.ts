@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { answerLegalQuestion } from "@/legal";
 import { getSessionUser } from "@/lib/auth";
+import { backendFetch } from "@/lib/backend-client";
 import { VectorStoreError } from "@/lib/vector/errors";
 
 const requestSchema = z.object({
@@ -26,21 +26,33 @@ export async function POST(request: Request) {
     );
   }
 
+  // 1. Primary: Forward to standalone soli-backend
   try {
-    const result = await answerLegalQuestion({
-      ...parsed.data,
-      userId: user.id,
+    const data = await backendFetch("/api/legal/answer", {
+      method: "POST",
+      body: JSON.stringify({
+        ...parsed.data,
+        userId: user.id,
+      }),
     });
-    return NextResponse.json(result);
-  } catch (error) {
-    // Infrastructure failure is an outage, not an empty library: 503 so
-    // callers show "unavailable + retry" instead of a 500 or a fake refusal.
-    if (error instanceof VectorStoreError) {
-      return NextResponse.json(
-        { error: "corpus_unavailable", code: error.code },
-        { status: 503 },
-      );
+    return NextResponse.json(data);
+  } catch {
+    // 2. Fallback to in-app legal knowledge engine if backend is offline
+    try {
+      const { answerLegalQuestion } = await import("@/legal");
+      const result = await answerLegalQuestion({
+        ...parsed.data,
+        userId: user.id,
+      });
+      return NextResponse.json(result);
+    } catch (error) {
+      if (error instanceof VectorStoreError) {
+        return NextResponse.json(
+          { error: "corpus_unavailable", code: error.code },
+          { status: 503 },
+        );
+      }
+      throw error;
     }
-    throw error;
   }
 }

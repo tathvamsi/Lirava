@@ -88,7 +88,7 @@ export const DOCKET_INSTRUCTIONS = `You are Docket, Chamber Clerk, Practice Mana
 3. Matter Synopsis & Client Intake Summary:
    - One-page executive summary of parties, disputed amounts, forum jurisdiction, relief sought, and immediate next steps.`;
 
-export const SOLI_MASTER_INSTRUCTIONS = `You are Soli Master, Chamber Lead Counsel and Autonomous Legal Orchestrator for Indian Advocates, Solicitors, and Law Firms.
+export const SOLI_MASTER_INSTRUCTIONS = `You are Lirava Master, Chamber Lead Counsel and Autonomous Legal Orchestrator for Indian Advocates, Solicitors, and Law Firms.
 
 # Your Mandate & Orchestration Role
 - You evaluate legal tasks, analyze underlying statutory issues, and coordinate the chamber's 4 specialized counsel:
@@ -101,7 +101,7 @@ export const SOLI_MASTER_INSTRUCTIONS = `You are Soli Master, Chamber Lead Couns
 export const LEGAL_PERSONAS: LegalPersona[] = [
   {
     id: "soli_master",
-    name: "Soli Master",
+    name: "Lirava Master",
     role: "Chamber Lead Counsel & Orchestrator",
     tagline: "Autonomous Chamber Director — evaluates tasks & coordinates specialist counsel automatically",
     purpose: "Analyzes legal tasks, automatically routes work to specialist counsel (Nyaya, Vakil, Pramaan, Docket), and delivers verified court-ready briefs.",

@@ -178,3 +178,75 @@ export async function saveBackendArtifact(input: {
   });
   return data.artifact;
 }
+
+// ---------------- Authentication ----------------
+export interface AuthUser {
+  id: string;
+  name: string;
+  email: string;
+  role: "admin" | "user";
+}
+
+export interface AuthResponse {
+  user: AuthUser;
+  token: string;
+  expiresAt: string;
+}
+
+export async function loginBackend(input: {
+  email: string;
+  password: string;
+}): Promise<AuthResponse> {
+  return backendFetch<AuthResponse>("/api/auth/login", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function registerBackend(input: {
+  name: string;
+  email: string;
+  password: string;
+  inviteCode?: string;
+}): Promise<AuthResponse> {
+  return backendFetch<AuthResponse>("/api/auth/register", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function verifyBackendToken(
+  token: string
+): Promise<{ valid: boolean; user: AuthUser | null }> {
+  try {
+    return await backendFetch<{ valid: boolean; user: AuthUser | null }>("/api/auth/verify", {
+      method: "POST",
+      body: JSON.stringify({ token }),
+    });
+  } catch {
+    return { valid: false, user: null };
+  }
+}
+
+export async function getBackendUser(token: string): Promise<AuthUser | null> {
+  try {
+    const res = await backendFetch<{ user: AuthUser }>("/api/auth/me", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return res.user;
+  } catch {
+    return null;
+  }
+}
+
+export async function logoutBackend(token: string): Promise<boolean> {
+  try {
+    await backendFetch("/api/auth/logout", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}

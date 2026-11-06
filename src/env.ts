@@ -113,7 +113,7 @@ if (!parsed.success) {
   const details = parsed.error.issues
     .map((issue) => `${issue.path.join(".") || "(root)"}: ${issue.message}`)
     .join("\n  ");
-  throw new Error(`Invalid Soli environment variables:\n  ${details}`);
+  throw new Error(`Invalid Lirava environment variables:\n  ${details}`);
 }
 
 export const env = parsed.data;
