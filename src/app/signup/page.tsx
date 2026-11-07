@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { redirect } from "next/navigation";
-import { FileSearch, FolderLock, Scale, ShieldCheck } from "lucide-react";
+import { FileSearch, FolderLock, ShieldCheck } from "lucide-react";
 import { getSessionUser } from "@/lib/auth";
 import { SignupForm } from "@/components/auth/signup-form";
+import { LiravaLogo, LiravaLockup } from "@/components/brand/LiravaLogo";
 
 export const metadata: Metadata = {
   title: "Sign up",
@@ -47,17 +47,12 @@ export default async function SignupPage() {
           />
 
           <div className="relative">
-            <Link href="/" className="inline-flex items-center gap-2.5">
-              <span className="grid size-9 place-items-center rounded-lg bg-brand text-card">
-                <Scale className="size-[18px]" strokeWidth={2.25} />
-              </span>
-              <span className="font-serif text-[22px] font-semibold tracking-tight">
-                Lirava
-              </span>
+            <div className="inline-flex items-center gap-2.5">
+              <LiravaLockup className="h-11 w-48" />
               <span className="rounded-full border border-border px-2 py-0.5 text-[11px] text-muted">
                 Legal workspace
               </span>
-            </Link>
+            </div>
 
             <h1 className="mt-10 max-w-lg font-serif text-4xl leading-[1.05] font-semibold tracking-tight text-balance xl:text-[58px]">
               Set up your firm&apos;s legal workspace.
@@ -102,17 +97,7 @@ export default async function SignupPage() {
             aria-hidden
             className="dot-grid absolute inset-x-0 top-0 h-44 opacity-[0.08] [mask-image:linear-gradient(to_bottom,black,transparent)]"
           />
-          <Link
-            href="/"
-            className="relative mb-8 inline-flex items-center gap-2.5 lg:hidden"
-          >
-            <span className="grid size-9 place-items-center rounded-lg bg-brand text-background">
-              <Scale className="size-[18px]" strokeWidth={2.25} />
-            </span>
-            <span className="font-serif text-[22px] font-semibold tracking-tight">
-              Lirava
-            </span>
-          </Link>
+          <LiravaLogo className="relative mb-8 lg:hidden" />
 
           <div className="relative mx-auto w-full max-w-[420px]">
             <SignupForm />

@@ -11,6 +11,10 @@ const mono = JetBrains_Mono({ variable: "--font-jetbrains-mono", subsets: ["lati
 export const metadata: Metadata = {
   title: "Lirava — AI legal work for Indian litigation teams",
   description: "Lirava researches Indian law, reads case files, and answers with pinpoint citations for legal professionals.",
+  icons: {
+    icon: "/favicon.png",
+    apple: "/favicon.png",
+  },
 };
 
 export const viewport = {

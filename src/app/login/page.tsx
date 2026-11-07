@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { redirect } from "next/navigation";
-import { FileSearch, FolderLock, Scale, ShieldCheck } from "lucide-react";
+import { FileSearch, FolderLock, ShieldCheck } from "lucide-react";
 import { getSessionUser } from "@/lib/auth";
 import { LoginForm } from "@/components/auth/login-form";
+import { LiravaLogo, LiravaLockup } from "@/components/brand/LiravaLogo";
 
 export const metadata: Metadata = {
   title: "Log in",
@@ -34,11 +34,10 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
           <div aria-hidden className="dot-grid absolute inset-0 opacity-[0.08] invert" />
 
           <div className="relative">
-            <Link href="/" className="inline-flex items-center gap-2.5">
-              <span className="grid size-9 place-items-center rounded-lg bg-brand text-background"><Scale className="size-[18px]" strokeWidth={2.25} /></span>
-              <span className="font-serif text-[22px] font-medium tracking-[-0.04em]">Lirava</span>
+            <div className="inline-flex items-center gap-2.5">
+              <LiravaLockup className="h-11 w-48" />
               <span className="rounded-full border border-border px-2 py-0.5 text-[11px] text-muted">Legal workspace</span>
-            </Link>
+            </div>
 
             <h1 className="mt-16 max-w-lg font-serif text-[46px] leading-[1.02] font-semibold tracking-[-0.045em] text-balance xl:text-[58px]">Your legal work, in one secure place.</h1>
             <p className="mt-5 max-w-md text-[16px] leading-relaxed text-muted">Return to your matters, research, documents, and next steps.</p>
@@ -72,10 +71,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
 
         <section aria-label="Log in" className="relative flex flex-col justify-center bg-card px-5 py-10 sm:px-10 lg:px-16">
           <div aria-hidden className="dot-grid absolute inset-x-0 top-0 h-44 opacity-[0.08] [mask-image:linear-gradient(to_bottom,black,transparent)]" />
-          <Link href="/" className="relative mb-8 inline-flex items-center gap-2.5 lg:hidden">
-            <span className="grid size-9 place-items-center rounded-lg bg-brand text-background"><Scale className="size-[18px]" strokeWidth={2.25} /></span>
-            <span className="font-serif text-[22px] font-medium tracking-[-0.04em]">Lirava</span>
-          </Link>
+          <LiravaLogo className="relative mb-8 lg:hidden" />
           <div className="relative mx-auto w-full max-w-[420px]">
             <LoginForm next={next} />
             <p className="mt-6 text-center text-[12px] text-muted">Protected by account-scoped sessions</p>

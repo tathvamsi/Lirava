@@ -11,14 +11,10 @@ import { setSidebarCollapsed, setSidebarOpen, toggleSidebar, useSidebarCollapsed
 import { timeAgo } from "@/lib/status";
 import { stripThinkingBlocks } from "@/lib/strip-thinking";
 import type { Conversation, Matter, Message } from "@/lib/types";
+import { LiravaLogo } from "@/components/brand/LiravaLogo";
 
 export function Wordmark() {
-  return (
-    <span className="flex items-center gap-2.5">
-      <span className="flex size-6 items-center justify-center rounded-[8px] bg-navy text-[12px] font-semibold text-white shadow-sm">L</span>
-      <span className="font-serif text-[20px] font-medium tracking-[-0.04em] text-foreground">Lirava</span>
-    </span>
-  );
+  return <LiravaLogo />;
 }
 
 /** Last readable line of a conversation, for the preview under its title. */

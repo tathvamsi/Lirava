@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { marketing } from "@/config/marketing";
 import { revealTransition } from "@/lib/marketing-motion";
+import { LiravaLockup } from "@/components/brand/LiravaLogo";
 
 const features = [
   [
@@ -115,11 +116,7 @@ function nextScenarioIndex(current: number) {
 }
 
 function Mark() {
-  return (
-    <span className="flex size-9 items-center justify-center rounded-xl bg-navy text-[15px] font-serif font-semibold text-on-dark">
-      L
-    </span>
-  );
+  return <LiravaLockup className="h-11 w-48" />;
 }
 
 function Header() {
@@ -140,15 +137,10 @@ function Header() {
       <div className="mx-auto flex h-18 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <Link
           href="/"
-          className="flex items-center gap-2.5"
+          className="flex items-center"
           aria-label="Lirava home"
         >
           <Mark />
-          <span
-            className="font-serif text-[24px] font-semibold tracking-[-0.04em] text-foreground"
-          >
-            {marketing.name}
-          </span>
         </Link>
         <nav className="hidden items-center gap-6 lg:flex" aria-label="Primary">
           {marketing.navigation.map((item) => (
