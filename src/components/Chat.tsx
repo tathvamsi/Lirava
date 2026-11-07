@@ -632,7 +632,7 @@ function Composer({ dot, onSend, onStop, submitting = false, draft = null }: { d
       onDrop={(e) => { e.preventDefault(); setDragging(false); addFiles([...e.dataTransfer.files]); }}
     >
       <div
-        className={`composer-shell rounded-2xl border bg-card px-4 pt-3 pb-2 transition-colors focus-within:border-brand/60 ${dragging ? "border-brand border-dashed" : "border-border"}`}
+        className={`composer-shell rounded-2xl bg-card px-4 pt-3 pb-2 transition-colors ${dragging ? "border-brand border-dashed" : "border-transparent"}`}
       >
         {uploads.length > 0 && (
           <div className="mb-2 flex flex-wrap gap-1.5 px-1 pt-1">

@@ -8,14 +8,18 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const convId = url.searchParams.get("conversationId");
   const q = new URLSearchParams({ userId: user.id });
+  if (url.searchParams.get("agentOnly") === "true") q.set("agentOnly", "true");
   if (convId) q.set("conversationId", convId);
 
   try {
-    const res = await fetch(`${BACKEND_URL}/api/artifacts?${q.toString()}`);
+    const res = await fetch(`${BACKEND_URL}/api/artifacts?${q.toString()}`, {
+      cache: "no-store",
+      signal: AbortSignal.timeout(15000),
+    });
     const data = await res.json();
-    return Response.json(data);
-  } catch (err: any) {
-    return Response.json({ error: err.message }, { status: 500 });
+    return Response.json(data, { status: res.status });
+  } catch {
+    return Response.json({ error: "Unable to load artifacts. Please try again." }, { status: 502 });
   }
 }
 
@@ -32,7 +36,7 @@ export async function POST(req: Request) {
     });
     const data = await res.json();
     return Response.json(data, { status: res.status });
-  } catch (err: any) {
-    return Response.json({ error: err.message }, { status: 500 });
+  } catch {
+    return Response.json({ error: "Unable to save artifact. Please try again." }, { status: 502 });
   }
 }

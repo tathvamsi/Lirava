@@ -16,7 +16,7 @@ export default function Home() {
   if (loaded && !dots.length) {
     return (
       <div className="flex-1 overflow-y-auto">
-        <div className="rails animate-page-rise mx-auto flex min-h-full max-w-[880px] flex-col items-center justify-center px-4 py-16 text-center sm:px-8">
+        <div className="animate-page-rise mx-auto flex min-h-full max-w-[880px] flex-col items-center justify-center px-4 py-16 text-center sm:px-8">
           <p className="text-foreground/60">Start a new conversation from the sidebar.</p>
         </div>
       </div>
@@ -40,15 +40,14 @@ export default function Home() {
 
   return (
     <div className="flex-1 overflow-y-auto">
-      <div className="rails animate-page-rise mx-auto max-w-[880px] px-4 sm:px-8">
+      <div className="animate-page-rise mx-auto max-w-[880px] px-4 sm:px-8">
         <section className="flex min-h-[calc(100dvh-56px)] -translate-y-10 flex-col items-center justify-center text-center">
           <h1 className="mb-9 font-serif text-[38px] font-semibold tracking-[-0.04em] text-foreground sm:text-[48px]">
             Welcome back.
           </h1>
           <div className="w-full max-w-[640px] text-left">
-            <div className="composer-shell rounded-2xl border border-border bg-card px-4 pt-3 pb-2 transition-shadow focus-within:border-brand/60">
+            <div className="composer-shell rounded-2xl bg-card px-4 pt-3 pb-2 transition-shadow">
               <textarea
-                autoFocus
                 rows={1}
                 value={text}
                 onChange={(e) => setText(e.target.value)}

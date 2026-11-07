@@ -4,8 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
   motion,
-  useScroll,
-  useSpring,
+  useReducedMotion,
 } from "framer-motion";
 import {
   ArrowRight,
@@ -15,6 +14,8 @@ import {
   FileText,
   LockKeyhole,
   Menu,
+  Pause,
+  Play,
   Search,
   ShieldCheck,
   Sparkles,
@@ -80,32 +81,44 @@ const questions = [
   ],
 ] as const;
 
-const demoPrompt =
-  "Does the record support a Section 138 NI Act notice challenge based on service?";
-const demoAnswerText =
-  "The available record does not establish non-service. Review the dispatch receipt and returned envelope before taking a final position.";
+const demoScenarios = [
+  {
+    prompt: "Does the record support a Section 138 NI Act notice challenge based on service?",
+    answer: "The available record does not establish non-service. Review the dispatch receipt and returned envelope before taking a final position.",
+    sources: [
+      ["Notice.pdf", "Page 4: Dispatch details and address."],
+      ["Case file", "Page 12: Correspondence timeline."],
+    ],
+  },
+  {
+    prompt: "Which clause governs termination after a material breach?",
+    answer: "Clause 14 requires written notice and a cure period before termination. The correspondence does not show that the cure period expired.",
+    sources: [
+      ["Supply agreement", "Page 18: Termination and cure."],
+      ["Termination notice", "Page 2: Alleged material breach."],
+    ],
+  },
+  {
+    prompt: "What does the plaint say about the limitation period?",
+    answer: "The pleading relies on acknowledgement in 2021. Confirm the signed communication before relying on a fresh limitation period.",
+    sources: [
+      ["Plaint.pdf", "Page 7: Limitation pleading."],
+      ["Email chain", "Page 3: Acknowledgement of liability."],
+    ],
+  },
+] as const;
+
+type DemoStage = "typing" | "reading" | "answer";
+
+function nextScenarioIndex(current: number) {
+  return (current + 1 + Math.floor(Math.random() * (demoScenarios.length - 1))) % demoScenarios.length;
+}
 
 function Mark() {
   return (
     <span className="flex size-9 items-center justify-center rounded-xl bg-navy text-[15px] font-serif font-semibold text-on-dark">
       L
     </span>
-  );
-}
-
-function ScrollProgress() {
-  const { scrollYProgress } = useScroll();
-  const scaleX = useSpring(scrollYProgress, {
-    stiffness: 180,
-    damping: 30,
-    restDelta: 0.001,
-  });
-  return (
-    <motion.div
-      className="soli-scroll-progress"
-      style={{ scaleX }}
-      aria-hidden
-    />
   );
 }
 
@@ -122,7 +135,7 @@ function Header() {
   const navClass = "text-muted hover:text-foreground";
   return (
     <header
-      className={`soli-nav sticky top-0 z-50 border-b border-navy/10 ${scrolled ? "soli-nav-scrolled" : "soli-nav-top"}`}
+      className={`soli-nav sticky top-0 z-50 ${scrolled ? "soli-nav-scrolled" : "soli-nav-top"}`}
     >
       <div className="mx-auto flex h-18 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <Link
@@ -202,6 +215,39 @@ function Header() {
 }
 
 function ProductPreview() {
+  const reduceMotion = useReducedMotion();
+  const [scenarioIndex, setScenarioIndex] = useState(0);
+  const [stage, setStage] = useState<DemoStage>("answer");
+  const [typedLength, setTypedLength] = useState(demoScenarios[0].prompt.length);
+  const [paused, setPaused] = useState(false);
+  const scenario = demoScenarios[scenarioIndex];
+  const typedPrompt = scenario.prompt.slice(0, typedLength);
+
+  useEffect(() => {
+    if (reduceMotion || paused) return;
+
+    if (stage === "typing") {
+      if (typedLength < scenario.prompt.length) {
+        const timer = window.setTimeout(() => setTypedLength((length) => length + 1), 22);
+        return () => window.clearTimeout(timer);
+      }
+      setStage("reading");
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      if (stage === "reading") {
+        setStage("answer");
+        return;
+      }
+      setScenarioIndex((index) => nextScenarioIndex(index));
+      setTypedLength(0);
+      setStage("typing");
+    }, stage === "reading" ? 1100 : 3600);
+
+    return () => window.clearTimeout(timer);
+  }, [paused, reduceMotion, scenario.prompt.length, stage, typedLength]);
+
   return (
     <div
       className="relative mx-auto w-full rounded-lg border border-navy/15 bg-background p-3 shadow-elevated"
@@ -215,36 +261,52 @@ function ProductPreview() {
             Private matter
           </span>
         </div>
-        <div className="relative grid min-h-[360px] gap-0 md:grid-cols-[1.35fr_0.65fr]">
-          <div className="soli-live-demo">
+        <div className="relative grid min-h-[360px] gap-0 md:grid-cols-[1.35fr_0.65fr]" data-loop={!reduceMotion && !paused ? "running" : undefined}>
+          <div className="soli-live-demo" data-stage={stage}>
             <div className="p-5 sm:p-6">
-              <p className="text-[12px] font-medium text-brand-readable">
-                Ask a question
-              </p>
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-[12px] font-medium text-brand-readable">Ask a question</p>
+                {!reduceMotion && (
+                  <button
+                    type="button"
+                    onClick={() => setPaused((value) => !value)}
+                    className="inline-flex size-8 items-center justify-center rounded-md text-muted transition-colors hover:bg-highlight hover:text-foreground"
+                    aria-label={paused ? "Play product demo" : "Pause product demo"}
+                    aria-pressed={paused}
+                  >
+                    {paused ? <Play className="size-4" /> : <Pause className="size-4" />}
+                  </button>
+                )}
+              </div>
               <p className="mt-3 min-h-16 rounded-xl border border-navy/10 bg-background p-3 text-[13px] leading-relaxed text-foreground">
-                {demoPrompt}
+                {typedPrompt}
+                {stage === "typing" && <span className="soli-demo-caret" aria-hidden="true" />}
               </p>
               <div className="mt-5 border-t border-navy/10 pt-5">
                 <p className="text-[12px] font-medium text-brand-readable">
                   Lirava&apos;s answer
                 </p>
-                <div>
-                  <p className="mt-2 text-[13px] leading-relaxed text-foreground">
-                    {demoAnswerText}
-                  </p>
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    <span className="rounded-full border border-brand/25 bg-highlight px-2.5 py-1 text-[10px] font-medium text-brand-readable">
-                      Notice.pdf, page 4
-                    </span>
-                    <span className="rounded-full border border-navy/15 bg-background px-2.5 py-1 text-[10px] font-medium text-muted">
-                      Case file, page 12
-                    </span>
-                  </div>
+                <div aria-live="polite">
+                  {stage === "answer" ? (
+                    <>
+                      <p className="mt-2 text-[13px] leading-relaxed text-foreground">{scenario.answer}</p>
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        {scenario.sources.map(([name, detail], index) => (
+                          <span key={name} className={`rounded-full border px-2.5 py-1 text-[10px] font-medium ${index === 0 ? "border-brand/25 bg-highlight text-brand-readable" : "border-navy/15 bg-background text-muted"}`}>
+                            {name}, {detail.match(/Page \d+/)?.[0]}
+                          </span>
+                        ))}
+                      </div>
+                    </>
+                  ) : (
+                    <p className="mt-2 text-[13px] leading-relaxed text-muted">
+                      {stage === "reading" ? "Reading the selected record and checking the cited passages…" : "Waiting for the question…"}
+                    </p>
+                  )}
                   <div className="mt-4 border-t border-border pt-3 md:hidden">
                     <p className="text-[10px] font-medium text-foreground">Sources</p>
                     <div className="mt-2 grid grid-cols-2 gap-3 text-[10px] leading-relaxed text-muted">
-                      <p><span className="block font-medium text-foreground">Notice.pdf</span>Page 4</p>
-                      <p><span className="block font-medium text-foreground">Case file</span>Page 12</p>
+                      {scenario.sources.map(([name, detail]) => <p key={name}><span className="block font-medium text-foreground">{name}</span>{detail}</p>)}
                     </div>
                   </div>
                 </div>
@@ -255,20 +317,12 @@ function ProductPreview() {
                 Sources
               </p>
               <div className="mt-4 space-y-3">
-                <div
-                  className="soli-source-active rounded-xl border border-white/10 bg-white/8 p-3"
-                >
-                  <p className="text-[11px] font-semibold">Notice.pdf</p>
-                  <p className="mt-1 text-[10px] leading-relaxed text-on-dark-muted">
-                    Page 4: Dispatch details and address.
-                  </p>
-                </div>
-                <div className="rounded-xl border border-white/10 bg-white/8 p-3">
-                  <p className="text-[11px] font-semibold">Case file</p>
-                  <p className="mt-1 text-[10px] leading-relaxed text-on-dark-muted">
-                    Page 12: Correspondence timeline.
-                  </p>
-                </div>
+                {scenario.sources.map(([name, detail], index) => (
+                  <div key={name} className={`rounded-xl border border-white/10 bg-white/8 p-3 ${index === 0 && stage !== "typing" ? "soli-source-active" : ""}`}>
+                    <p className="text-[11px] font-semibold">{name}</p>
+                    <p className="mt-1 text-[10px] leading-relaxed text-on-dark-muted">{detail}</p>
+                  </div>
+                ))}
               </div>
               <p className="mt-5 text-[10px] leading-relaxed text-on-dark-muted">
                 Sources stay visible with the answer.
@@ -281,42 +335,93 @@ function ProductPreview() {
   );
 }
 
+function MatterDesk() {
+  const reduceMotion = useReducedMotion();
+  const initial = reduceMotion ? false : { opacity: 0, y: 16 };
+  const transition = (delay: number) => ({
+    duration: reduceMotion ? 0 : 0.6,
+    delay: reduceMotion ? 0 : delay,
+    ease: "circOut" as const,
+  });
+
+  return (
+    <div className="soli-desk-scene" aria-hidden="true">
+      <motion.div
+        className="soli-desk-sheet soli-desk-sheet--notice"
+        initial={initial}
+        animate={{ opacity: 1, y: 0, rotate: -5 }}
+        transition={transition(0.08)}
+      >
+        <FileText className="size-5 text-brand" strokeWidth={1.75} />
+        <p className="mt-7 text-[12px] font-semibold text-foreground">Notice.pdf</p>
+        <p className="mt-2 text-[11px] leading-relaxed text-muted">Dispatch receipt and address.</p>
+        <span className="soli-desk-rule mt-6" />
+      </motion.div>
+      <motion.div
+        className="soli-desk-sheet soli-desk-sheet--authority"
+        initial={initial}
+        animate={{ opacity: 1, y: 0, rotate: 4 }}
+        transition={transition(0.18)}
+      >
+        <Search className="size-5 text-foreground" strokeWidth={1.75} />
+        <p className="mt-7 text-[12px] font-semibold text-foreground">Section 138</p>
+        <p className="mt-2 text-[11px] leading-relaxed text-muted">Service and limitation.</p>
+        <span className="mt-5 inline-flex rounded-md bg-brand px-2 py-1 text-[10px] font-semibold text-on-dark">Cited</span>
+      </motion.div>
+      <motion.div
+        className="soli-desk-sheet soli-desk-sheet--draft"
+        initial={initial}
+        animate={{ opacity: 1, y: 0, rotate: -1 }}
+        transition={transition(0.28)}
+      >
+        <Check className="size-5 text-brand" strokeWidth={1.75} />
+        <p className="mt-8 text-[13px] font-semibold text-foreground">Draft ready</p>
+        <p className="mt-2 text-[11px] leading-relaxed text-muted">Authorities linked to the record.</p>
+        <span className="soli-desk-rule mt-8" />
+        <span className="soli-desk-rule mt-2 w-3/4" />
+      </motion.div>
+    </div>
+  );
+}
+
 export default function MarketingSite() {
   return (
     <div className="soli-marketing min-h-screen bg-background text-foreground">
-      <ScrollProgress />
       <Header />
       <main>
         <section className="desk relative overflow-hidden text-foreground">
           <div className="soli-hero-layout relative mx-auto max-w-7xl px-4 pt-14 pb-12 sm:px-6 sm:pt-16 lg:px-8 lg:pt-16 lg:pb-16">
-            <div className="mx-auto max-w-4xl text-center">
-              <h1 className="soli-hero-title mx-auto max-w-[900px] font-serif text-balance">
-                {marketing.tagline}
-              </h1>
-              <p className="mx-auto mt-6 max-w-2xl text-[17px] leading-[1.65] text-muted sm:text-[18px]">
-                From case files to court-ready drafts, Lirava helps Indian lawyers research, reason, and prepare with citations grounded in their documents.
-              </p>
-              <div className="mt-7 flex flex-wrap justify-center gap-3">
-                <Link
-                  href="/login"
-                  className="inline-flex h-12 items-center rounded-lg bg-action px-6 text-[15px] font-semibold text-on-dark"
-                >
-                  Open Lirava
-                </Link>
-                <a
-                  href="#how-it-works"
-                  className="inline-flex h-12 items-center rounded-lg border border-border bg-card px-6 text-[15px] font-medium text-foreground shadow-elevated"
-                >
-                  See how it works
-                </a>
+            <div className="grid items-center gap-10 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-16">
+              <div className="max-w-2xl">
+                <h1 className="soli-hero-title font-serif text-balance">
+                  {marketing.tagline}
+                </h1>
+                <p className="mt-6 max-w-xl text-[17px] leading-[1.65] text-muted sm:text-[18px]">
+                  From case files to court-ready drafts, Lirava keeps every answer grounded in your documents.
+                </p>
+                <div className="mt-7 flex flex-wrap gap-3">
+                  <Link
+                    href="/login"
+                    className="inline-flex h-12 items-center rounded-lg bg-action px-6 text-[15px] font-semibold text-on-dark"
+                  >
+                    Open Lirava
+                  </Link>
+                  <a
+                    href="#how-it-works"
+                    className="inline-flex h-12 items-center rounded-lg bg-card px-6 text-[15px] font-medium text-foreground shadow-elevated"
+                  >
+                    See how it works
+                  </a>
+                </div>
+                <div aria-label="Supported files" className="mt-5 flex flex-wrap gap-x-5 gap-y-1 text-[12px] text-muted">
+                  <span>PDF case files</span>
+                  <span>DOCX drafts</span>
+                  <span>Scanned judgments</span>
+                </div>
               </div>
-              <div aria-label="Supported files" className="mt-5 flex flex-wrap justify-center gap-x-5 gap-y-1 text-[12px] text-muted">
-                <span>PDF case files</span>
-                <span>DOCX drafts</span>
-                <span>Scanned judgments</span>
-              </div>
+              <MatterDesk />
             </div>
-            <div className="soli-hero-preview relative mx-auto mt-12 max-w-6xl sm:mt-14">
+            <div className="soli-hero-preview relative mx-auto mt-10 max-w-6xl sm:mt-14">
               <ProductPreview />
             </div>
           </div>

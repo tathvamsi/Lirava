@@ -1,5 +1,5 @@
-/* Hallmark · theme: Newsprint (catalogue) · genre: editorial · posture: restrained · hero: broadsheet front · nav: kept · footer: kept · built: Hallmark · redesign: full site · v2.0.0 */
-/* Newsprint restyle: pale paper, warm ink, ruled case records, dried-brick signal. */
+/* Hallmark · theme: Coral (by request) · genre: atmospheric · posture: restrained · hero: legal matter desk · draw: 8ba5de · v2.0.0 */
+/* Graphite ground, coral resolves the legal record; remove frames before adding objects. */
 @import "tailwindcss";
 @import "./lirava-tokens.css";
 @plugin "@tailwindcss/typography";
@@ -86,6 +86,42 @@
   }
   h1, h2, h3 { font-weight: 600; letter-spacing: -0.03em; overflow-wrap: break-word; min-width: 0; }
   ::selection { background: color-mix(in oklab, var(--lirava-accent) 30%, transparent); }
+}
+
+/* Quiet graphite scrollbars keep long workspaces readable without adding another frame. */
+html {
+  scrollbar-color: var(--lirava-muted) transparent;
+  scrollbar-width: thin;
+}
+
+*::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--lirava-border);
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--lirava-accent-readable);
+  background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-thumb:active {
+  background: var(--lirava-accent);
+  background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-corner {
+  background: transparent;
 }
 
 @layer components {
@@ -189,17 +225,20 @@
   text-wrap: balance;
 }
 .soli-marketing h1 { font-size: var(--soli-h1) !important; line-height: 1.02 !important; letter-spacing: -.02em !important; }
+.soli-marketing .soli-hero-title { font-size: clamp(3.25rem, 4.5vw, 4.5rem) !important; }
 .soli-marketing h2 { font-size: var(--soli-h2) !important; line-height: 1.08 !important; letter-spacing: -.015em !important; }
 .soli-marketing h3 { font-family: var(--soli-display); font-size: clamp(1.25rem, 1.8vw, 1.5rem) !important; font-weight: 700; line-height: 1.25; }
 .soli-marketing p { max-width: 70ch; text-wrap: pretty; }
 .soli-marketing .bg-white { background-color: var(--card) !important; }
-.soli-scroll-progress { position: fixed; inset: 0 auto auto 0; z-index: 60; width: 100%; height: 2px; transform-origin: 0 50%; background: var(--lirava-accent); }
 .soli-nav { transition: background-color 200ms ease, backdrop-filter 200ms ease, box-shadow 200ms ease; }
 .soli-nav-top { background: var(--card); }
 .soli-nav-scrolled { background: var(--card); backdrop-filter: blur(18px) saturate(150%); box-shadow: var(--lirava-shadow); }
 .soli-live-demo { position: absolute; inset: 0; z-index: 2; display: grid; min-height: 360px; grid-template-columns: 1.2fr .8fr; background: var(--card); }
 .soli-live-demo ~ * { visibility: hidden; }
 .soli-source-active { border-color: var(--lirava-border); }
+.soli-demo-caret { display: inline-block; height: 1em; margin-left: 2px; border-left: 1px solid var(--lirava-accent); vertical-align: -0.14em; }
+[data-loop="running"] .soli-demo-caret { animation: soli-demo-caret 700ms steps(1, end) infinite; }
+@keyframes soli-demo-caret { 50% { opacity: 0; } }
 @media (max-width: 767px) { .soli-live-demo { grid-template-columns: 1fr; } .soli-live-demo aside, .soli-live-demo ~ aside { display: none; } }
 .soli-marketing a,
 .soli-marketing button,
@@ -221,19 +260,21 @@
   to { opacity: 1; transform: translateY(0); }
 }
 .soli-hero-layout { animation: none; }
-.soli-hero-preview::before {
-  content: "";
+.soli-desk-scene { position: relative; min-height: 400px; }
+.soli-desk-sheet {
   position: absolute;
-  inset: 7px -5px -7px 5px;
-  z-index: 0;
-  border: 1px solid var(--lirava-border);
+  width: 210px;
+  min-height: 190px;
+  padding: 24px;
   border-radius: var(--lirava-radius-lg);
-  background-color: var(--lirava-white);
-  background-image: var(--lirava-texture-cotton);
-  box-shadow: var(--lirava-shadow);
-  transform: rotate(.18deg);
+  background-color: var(--card);
+  box-shadow: var(--lirava-shadow-elevated);
 }
-.soli-hero-preview > * { position: relative; z-index: 1; }
+.soli-desk-sheet--notice { top: 32px; left: 3%; }
+.soli-desk-sheet--authority { top: 4px; right: 5%; width: 190px; min-height: 174px; }
+.soli-desk-sheet--draft { right: 20%; bottom: 12px; width: 250px; min-height: 206px; }
+.soli-desk-rule { display: block; height: 1px; width: 100%; background-color: var(--border); }
+@media (max-width: 1023px) { .soli-desk-scene { display: none; } }
 
 @media (prefers-reduced-motion: reduce) {
   .soli-marketing *,
@@ -578,16 +619,11 @@
 .composer-shell textarea:focus-visible {
   outline: 0;
 }
-.composer-shell {
-  background-color: var(--card);
-  background-image: var(--lirava-texture-cotton);
-  border-color: var(--border);
-  box-shadow: var(--lirava-shadow);
-}
+.composer-shell { background-color: var(--card); background-image: var(--lirava-texture-cotton); border-color: transparent; box-shadow: var(--lirava-shadow); }
 .composer-shell:focus-within {
-  border-color: var(--border);
-  outline: 2px solid var(--ring);
-  outline-offset: 3px;
+  border-color: transparent;
+  outline: 0;
+  box-shadow: var(--lirava-shadow-elevated);
 }
 .composer-shell::before { display: none; }
 .surface {
@@ -607,7 +643,7 @@
 .soli-marketing :is(.rounded-xl, .rounded-2xl) { border-radius: var(--lirava-radius-lg); }
 :where(.rounded-xl, .rounded-2xl) { border-radius: var(--lirava-radius-lg); }
 :where(input, textarea, select).rounded-lg { border-radius: var(--lirava-radius-sm); }
-.soli-chat-scrollbar { scrollbar-width: thin; scrollbar-color: var(--lirava-muted) transparent; scrollbar-gutter: stable; }
+.soli-chat-scrollbar { scrollbar-gutter: stable; }
 .soli-nav-top, .soli-nav-scrolled {
   background-color: var(--card);
   background-image: var(--lirava-texture-cotton);
@@ -622,4 +658,3 @@
 }
 .soli-marketing a:not(.bg-action) { text-decoration-color: var(--lirava-accent); text-underline-offset: .16em; }
 .soli-marketing a:not(.bg-action):hover { text-decoration-thickness: 2px; }
-.soli-hero-layout { border-top: 1px solid var(--border); }
