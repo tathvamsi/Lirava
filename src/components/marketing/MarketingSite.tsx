@@ -1,63 +1,28 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
+  AnimatePresence,
   motion,
   useReducedMotion,
+  useScroll,
+  useSpring,
+  useTransform,
 } from "framer-motion";
-import {
-  ArrowRight,
-  BookOpen,
-  Check,
-  ChevronDown,
-  FileText,
-  LockKeyhole,
-  Menu,
-  Pause,
-  Play,
-  Search,
-  ShieldCheck,
-  Sparkles,
-  Upload,
-  X,
-} from "lucide-react";
+import { ArrowRight, Check, LockKeyhole, Menu, Search, X } from "lucide-react";
 import { marketing } from "@/config/marketing";
-import { revealTransition } from "@/lib/marketing-motion";
+import { marketingEase } from "@/lib/marketing-motion";
 import { LiravaLockup } from "@/components/brand/LiravaLogo";
-
-const features = [
-  [
-    Search,
-    "Answers you can verify",
-    "Every response can show the file, page, and passage it came from.",
-  ],
-  [
-    ShieldCheck,
-    "Plain about uncertainty",
-    "If the available material does not support an answer, Lirava says so.",
-  ],
-  [
-    BookOpen,
-    "Statute-accurate retrieval",
-    "Find the exact section text, version, location, and source.",
-  ],
-  [
-    LockKeyhole,
-    "Shared and private libraries",
-    "Firm resources and personal uploads remain clearly separated.",
-  ],
-  [
-    FileText,
-    "Research through drafting",
-    "Move from facts and issues to a structured working draft.",
-  ],
-  [
-    Sparkles,
-    "Evidence and practice work",
-    "Review material, identify issues, and keep matters organised.",
-  ],
-] as const;
+import Faq from "./Faq";
+import FeatureGrid from "./FeatureGrid";
+import FitsEverywhere from "./FitsEverywhere";
+import HowItWorks from "./HowItWorks";
+import ProductDemo from "./ProductDemo";
+import ProductPanels from "./ProductPanels";
+import RailSection from "./RailSection";
+import { FocusText, Reveal, ScrollWords, useScrollerRef } from "./Reveal";
+import StatuteExplorer from "./StatuteExplorer";
 
 const questions = [
   [
@@ -82,65 +47,54 @@ const questions = [
   ],
 ] as const;
 
-const demoScenarios = [
-  {
-    prompt: "Does the record support a Section 138 NI Act notice challenge based on service?",
-    answer: "The available record does not establish non-service. Review the dispatch receipt and returned envelope before taking a final position.",
-    sources: [
-      ["Notice.pdf", "Page 4: Dispatch details and address."],
-      ["Case file", "Page 12: Correspondence timeline."],
-    ],
-  },
-  {
-    prompt: "Which clause governs termination after a material breach?",
-    answer: "Clause 14 requires written notice and a cure period before termination. The correspondence does not show that the cure period expired.",
-    sources: [
-      ["Supply agreement", "Page 18: Termination and cure."],
-      ["Termination notice", "Page 2: Alleged material breach."],
-    ],
-  },
-  {
-    prompt: "What does the plaint say about the limitation period?",
-    answer: "The pleading relies on acknowledgement in 2021. Confirm the signed communication before relying on a fresh limitation period.",
-    sources: [
-      ["Plaint.pdf", "Page 7: Limitation pleading."],
-      ["Email chain", "Page 3: Acknowledgement of liability."],
-    ],
-  },
+const trust = [
+  [Check, "Built for Indian litigation", "Designed around legal work, not generic chat."],
+  [Search, "Every answer cited", "File, page, passage, and library context."],
+  [LockKeyhole, "Your files stay private", "Private material stays in the right workspace."],
 ] as const;
 
-type DemoStage = "typing" | "reading" | "answer";
-
-function nextScenarioIndex(current: number) {
-  return (current + 1 + Math.floor(Math.random() * (demoScenarios.length - 1))) % demoScenarios.length;
-}
-
-function Mark() {
-  return <LiravaLockup className="h-11 w-48" />;
-}
-
 function Header() {
+  const reduce = Boolean(useReducedMotion());
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [active, setActive] = useState("");
+  const headerRef = useRef<HTMLElement>(null);
+  const container = useScrollerRef(headerRef);
+  const { scrollYProgress } = useScroll({ container });
+  const progress = useSpring(scrollYProgress, { stiffness: 120, damping: 30, mass: 0.3 });
+
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 24);
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    const scroller = container.current;
+    const read = () => setScrolled((scroller ? scroller.scrollTop : window.scrollY) > 24);
+    read();
+    const target: HTMLElement | Window = scroller ?? window;
+    target.addEventListener("scroll", read, { passive: true });
+    return () => target.removeEventListener("scroll", read);
+  }, [container]);
+
+  // Track which section is under the header so the nav underline follows the reader.
+  useEffect(() => {
+    const targets = marketing.navigation
+      .map((item) => document.getElementById(item.href.slice(1)))
+      .filter((el): el is HTMLElement => Boolean(el));
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) setActive(`#${entry.target.id}`);
+        }
+      },
+      { rootMargin: "-35% 0px -60% 0px" },
+    );
+    targets.forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
   }, []);
+
   const navClass = "text-muted hover:text-foreground";
   return (
-    <header
-      className={`soli-nav sticky top-0 z-50 ${scrolled ? "soli-nav-scrolled" : "soli-nav-top"}`}
-    >
-      <div className="mx-auto flex h-18 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        <Link
-          href="/"
-          className="flex items-center"
-          aria-label="Lirava home"
-        >
-          <Mark />
+    <header ref={headerRef} className={`soli-nav sticky top-0 z-50 ${scrolled ? "soli-nav-scrolled" : "soli-nav-top"}`}>
+      <div className="relative mx-auto flex h-20 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+        <Link href="/" className="flex items-center" aria-label="Lirava home">
+          <LiravaLockup className="h-11 w-48" />
         </Link>
         <nav className="hidden items-center gap-6 lg:flex" aria-label="Primary">
           {marketing.navigation.map((item) => (
@@ -148,30 +102,31 @@ function Header() {
               key={item.href}
               href={item.href}
               onClick={() => setActive(item.href)}
-              className={`relative text-[13px] font-medium transition-colors ${navClass}`}
+              aria-current={active === item.href ? "location" : undefined}
+              className={`relative text-[13px] font-medium transition-colors ${active === item.href ? "text-foreground" : navClass}`}
             >
               {item.label}
               {active === item.href && (
                 <motion.span
                   layoutId="soli-active-nav"
                   className="absolute -bottom-2 left-0 h-0.5 w-full bg-action"
-                  transition={revealTransition}
+                  transition={{ duration: reduce ? 0 : 0.4, ease: marketingEase }}
                 />
               )}
             </a>
           ))}
         </nav>
         <div className="hidden items-center gap-2 sm:flex">
-          <Link
-            href="/login"
-            className="inline-flex h-10 items-center rounded-lg border border-navy/20 px-4 text-[13px] font-semibold text-foreground transition-colors hover:bg-background/5"
-          >
+          <Link href="/login" className="inline-flex h-10 items-center px-3 text-[13px] font-medium text-muted transition-colors hover:text-foreground">
             Log in
+          </Link>
+          <Link href="/login" className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-action px-4 text-[13px] font-semibold text-on-dark">
+            Open Lirava <ArrowRight className="size-3.5" />
           </Link>
         </div>
         <button
           type="button"
-          className="flex size-9 items-center justify-center rounded-lg border border-navy/15 text-foreground lg:hidden"
+          className="flex size-9 items-center justify-center rounded-lg border border-border text-foreground lg:hidden"
           onClick={() => setOpen(!open)}
           aria-label="Toggle navigation"
           aria-expanded={open}
@@ -179,198 +134,67 @@ function Header() {
           {open ? <X className="size-5" /> : <Menu className="size-5" />}
         </button>
       </div>
-      {open && (
-        <div className="border-t border-navy/10 bg-background px-4 py-4 lg:hidden">
-          <nav className="mx-auto flex max-w-7xl flex-col gap-1">
-            {marketing.navigation.map((item) => (
-              <a
-                key={item.href}
-                href={item.href}
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: reduce ? 0 : 0.28, ease: marketingEase }}
+            className="overflow-hidden border-t border-border bg-background lg:hidden"
+          >
+            <nav className="mx-auto flex max-w-7xl flex-col gap-1 px-4 py-4">
+              {marketing.navigation.map((item) => (
+                <a
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setOpen(false)}
+                  className={`rounded-lg px-3 py-2 text-[14px] ${navClass}`}
+                >
+                  {item.label}
+                </a>
+              ))}
+              <Link
+                href="/login"
                 onClick={() => setOpen(false)}
-                className={`rounded-lg px-3 py-2 text-[14px] ${navClass}`}
+                className="mt-2 rounded-lg border border-border px-3 py-2.5 text-center text-[14px] font-semibold text-foreground"
               >
-                {item.label}
-              </a>
-            ))}
-            <Link
-              href="/login"
-              onClick={() => setOpen(false)}
-              className="mt-2 rounded-lg border border-navy/20 px-3 py-2.5 text-center text-[14px] font-semibold text-foreground"
-            >
-              Log in
-            </Link>
-          </nav>
-        </div>
+                Log in
+              </Link>
+            </nav>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      {!reduce && (
+        <motion.span
+          aria-hidden="true"
+          style={{ scaleX: progress }}
+          className="absolute inset-x-0 bottom-0 h-px origin-left bg-brand"
+        />
       )}
     </header>
   );
 }
 
-function ProductPreview() {
-  const reduceMotion = useReducedMotion();
-  const [scenarioIndex, setScenarioIndex] = useState(0);
-  const [stage, setStage] = useState<DemoStage>("answer");
-  const [typedLength, setTypedLength] = useState(demoScenarios[0].prompt.length);
-  const [paused, setPaused] = useState(false);
-  const scenario = demoScenarios[scenarioIndex];
-  const typedPrompt = scenario.prompt.slice(0, typedLength);
-
-  useEffect(() => {
-    if (reduceMotion || paused) return;
-
-    if (stage === "typing") {
-      if (typedLength < scenario.prompt.length) {
-        const timer = window.setTimeout(() => setTypedLength((length) => length + 1), 22);
-        return () => window.clearTimeout(timer);
-      }
-      setStage("reading");
-      return;
-    }
-
-    const timer = window.setTimeout(() => {
-      if (stage === "reading") {
-        setStage("answer");
-        return;
-      }
-      setScenarioIndex((index) => nextScenarioIndex(index));
-      setTypedLength(0);
-      setStage("typing");
-    }, stage === "reading" ? 1100 : 3600);
-
-    return () => window.clearTimeout(timer);
-  }, [paused, reduceMotion, scenario.prompt.length, stage, typedLength]);
-
+/** The demo settles into place as it scrolls into view. */
+function HeroStage({ children }: { children: ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const reduce = Boolean(useReducedMotion());
+  const container = useScrollerRef(ref);
+  const { scrollYProgress } = useScroll({ container, target: ref, offset: ["start end", "start 0.4"] });
+  const rotateX = useTransform(scrollYProgress, [0, 1], [reduce ? 0 : 6, 0]);
+  const scale = useTransform(scrollYProgress, [0, 1], [reduce ? 1 : 0.98, 1]);
   return (
-    <div
-      className="relative mx-auto w-full rounded-lg border border-navy/15 bg-background p-3 shadow-elevated"
-    >
-      <div className="overflow-hidden rounded-md border border-navy/10 bg-card">
-        <div className="flex items-center justify-between border-b border-navy/10 bg-highlight px-4 py-3">
-          <span className="flex items-center text-[11px] font-medium text-foreground">
-            Lirava workspace
-          </span>
-          <span className="rounded-full bg-background/7 px-2 py-1 text-[10px] font-medium text-foreground">
-            Private matter
-          </span>
-        </div>
-        <div className="relative grid min-h-[360px] gap-0 md:grid-cols-[1.35fr_0.65fr]" data-loop={!reduceMotion && !paused ? "running" : undefined}>
-          <div className="soli-live-demo" data-stage={stage}>
-            <div className="p-5 sm:p-6">
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-[12px] font-medium text-brand-readable">Ask a question</p>
-                {!reduceMotion && (
-                  <button
-                    type="button"
-                    onClick={() => setPaused((value) => !value)}
-                    className="inline-flex size-8 items-center justify-center rounded-md text-muted transition-colors hover:bg-highlight hover:text-foreground"
-                    aria-label={paused ? "Play product demo" : "Pause product demo"}
-                    aria-pressed={paused}
-                  >
-                    {paused ? <Play className="size-4" /> : <Pause className="size-4" />}
-                  </button>
-                )}
-              </div>
-              <p className="mt-3 min-h-16 rounded-xl border border-navy/10 bg-background p-3 text-[13px] leading-relaxed text-foreground">
-                {typedPrompt}
-                {stage === "typing" && <span className="soli-demo-caret" aria-hidden="true" />}
-              </p>
-              <div className="mt-5 border-t border-navy/10 pt-5">
-                <p className="text-[12px] font-medium text-brand-readable">
-                  Lirava&apos;s answer
-                </p>
-                <div aria-live="polite">
-                  {stage === "answer" ? (
-                    <>
-                      <p className="mt-2 text-[13px] leading-relaxed text-foreground">{scenario.answer}</p>
-                      <div className="mt-4 flex flex-wrap gap-2">
-                        {scenario.sources.map(([name, detail], index) => (
-                          <span key={name} className={`rounded-full border px-2.5 py-1 text-[10px] font-medium ${index === 0 ? "border-brand/25 bg-highlight text-brand-readable" : "border-navy/15 bg-background text-muted"}`}>
-                            {name}, {detail.match(/Page \d+/)?.[0]}
-                          </span>
-                        ))}
-                      </div>
-                    </>
-                  ) : (
-                    <p className="mt-2 text-[13px] leading-relaxed text-muted">
-                      {stage === "reading" ? "Reading the selected record and checking the cited passages…" : "Waiting for the question…"}
-                    </p>
-                  )}
-                  <div className="mt-4 border-t border-border pt-3 md:hidden">
-                    <p className="text-[10px] font-medium text-foreground">Sources</p>
-                    <div className="mt-2 grid grid-cols-2 gap-3 text-[10px] leading-relaxed text-muted">
-                      {scenario.sources.map(([name, detail]) => <p key={name}><span className="block font-medium text-foreground">{name}</span>{detail}</p>)}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <aside className="border-t border-navy/10 bg-navy p-5 text-white md:border-t-0 md:border-l">
-              <p className="text-[11px] font-medium text-on-dark">
-                Sources
-              </p>
-              <div className="mt-4 space-y-3">
-                {scenario.sources.map(([name, detail], index) => (
-                  <div key={name} className={`rounded-xl border border-white/10 bg-white/8 p-3 ${index === 0 && stage !== "typing" ? "soli-source-active" : ""}`}>
-                    <p className="text-[11px] font-semibold">{name}</p>
-                    <p className="mt-1 text-[10px] leading-relaxed text-on-dark-muted">{detail}</p>
-                  </div>
-                ))}
-              </div>
-              <p className="mt-5 text-[10px] leading-relaxed text-on-dark-muted">
-                Sources stay visible with the answer.
-              </p>
-            </aside>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function MatterDesk() {
-  const reduceMotion = useReducedMotion();
-  const initial = reduceMotion ? false : { opacity: 0, y: 16 };
-  const transition = (delay: number) => ({
-    duration: reduceMotion ? 0 : 0.6,
-    delay: reduceMotion ? 0 : delay,
-    ease: "circOut" as const,
-  });
-
-  return (
-    <div className="soli-desk-scene" aria-hidden="true">
-      <motion.div
-        className="soli-desk-sheet soli-desk-sheet--notice"
-        initial={initial}
-        animate={{ opacity: 1, y: 0, rotate: -5 }}
-        transition={transition(0.08)}
-      >
-        <FileText className="size-5 text-brand" strokeWidth={1.75} />
-        <p className="mt-7 text-[12px] font-semibold text-foreground">Notice.pdf</p>
-        <p className="mt-2 text-[11px] leading-relaxed text-muted">Dispatch receipt and address.</p>
-        <span className="soli-desk-rule mt-6" />
-      </motion.div>
-      <motion.div
-        className="soli-desk-sheet soli-desk-sheet--authority"
-        initial={initial}
-        animate={{ opacity: 1, y: 0, rotate: 4 }}
-        transition={transition(0.18)}
-      >
-        <Search className="size-5 text-foreground" strokeWidth={1.75} />
-        <p className="mt-7 text-[12px] font-semibold text-foreground">Section 138</p>
-        <p className="mt-2 text-[11px] leading-relaxed text-muted">Service and limitation.</p>
-        <span className="mt-5 inline-flex rounded-md bg-brand px-2 py-1 text-[10px] font-semibold text-on-dark">Cited</span>
-      </motion.div>
-      <motion.div
-        className="soli-desk-sheet soli-desk-sheet--draft"
-        initial={initial}
-        animate={{ opacity: 1, y: 0, rotate: -1 }}
-        transition={transition(0.28)}
-      >
-        <Check className="size-5 text-brand" strokeWidth={1.75} />
-        <p className="mt-8 text-[13px] font-semibold text-foreground">Draft ready</p>
-        <p className="mt-2 text-[11px] leading-relaxed text-muted">Authorities linked to the record.</p>
-        <span className="soli-desk-rule mt-8" />
-        <span className="soli-desk-rule mt-2 w-3/4" />
+    <div ref={ref} className="relative" style={{ perspective: 1400 }}>
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-0 -top-24 h-80"
+        style={{
+          background: "radial-gradient(50% 50% at 50% 50%, color-mix(in oklab, var(--brand) 16%, transparent), transparent 100%)",
+        }}
+      />
+      <motion.div className="relative" style={{ rotateX, scale, transformOrigin: "50% 0%" }}>
+        {children}
       </motion.div>
     </div>
   );
@@ -381,315 +205,220 @@ export default function MarketingSite() {
     <div className="soli-marketing min-h-screen bg-background text-foreground">
       <Header />
       <main>
-        <section className="desk relative overflow-hidden text-foreground">
-          <div className="soli-hero-layout relative mx-auto max-w-7xl px-4 pt-14 pb-12 sm:px-6 sm:pt-16 lg:px-8 lg:pt-16 lg:pb-16">
-            <div className="grid items-center gap-10 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-16">
-              <div className="max-w-2xl">
-                <h1 className="soli-hero-title font-serif text-balance">
-                  {marketing.tagline}
-                </h1>
-                <p className="mt-6 max-w-xl text-[17px] leading-[1.65] text-muted sm:text-[18px]">
-                  From case files to court-ready drafts, Lirava keeps every answer grounded in your documents.
-                </p>
-                <div className="mt-7 flex flex-wrap gap-3">
-                  <Link
-                    href="/login"
-                    className="inline-flex h-12 items-center rounded-lg bg-action px-6 text-[15px] font-semibold text-on-dark"
-                  >
-                    Open Lirava
-                  </Link>
-                  <a
-                    href="#how-it-works"
-                    className="inline-flex h-12 items-center rounded-lg bg-card px-6 text-[15px] font-medium text-foreground shadow-elevated"
-                  >
-                    See how it works
-                  </a>
-                </div>
-                <div aria-label="Supported files" className="mt-5 flex flex-wrap gap-x-5 gap-y-1 text-[12px] text-muted">
-                  <span>PDF case files</span>
-                  <span>DOCX drafts</span>
-                  <span>Scanned judgments</span>
-                </div>
+        <section className="desk relative overflow-hidden border-t border-border text-foreground">
+          {/* Quiet dotted field behind the right half, fading out like a horizon. */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-y-0 right-0 hidden w-3/5 lg:block"
+            style={{
+              backgroundImage: "radial-gradient(color-mix(in oklab, var(--foreground) 26%, transparent) 1.2px, transparent 1.2px)",
+              backgroundSize: "18px 18px",
+              maskImage: "radial-gradient(70% 90% at 100% 25%, black 25%, transparent 80%)",
+              WebkitMaskImage: "radial-gradient(70% 90% at 100% 25%, black 25%, transparent 80%)",
+            }}
+          />
+          <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="rails relative px-2 pt-12 pb-16 sm:px-8 lg:px-14 lg:pt-16 lg:pb-24">
+              <span aria-hidden="true" className="absolute -top-[3px] -left-[3px] hidden size-1.5 border border-border bg-background lg:block" />
+              <span aria-hidden="true" className="absolute -top-[3px] -right-[3px] hidden size-1.5 border border-border bg-background lg:block" />
+              <div className="max-w-4xl">
+                <motion.h1
+                  initial={{ opacity: 0, y: 22 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.8, ease: marketingEase }}
+                  className="soli-hero-title font-serif text-balance"
+                >
+                  Counsel, meet your <span className="text-brand-readable">tireless paralegal.</span>
+                </motion.h1>
+                <motion.div
+                  initial={{ opacity: 0, y: 18 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.8, delay: 0.12, ease: marketingEase }}
+                >
+                  <p className="mt-7 max-w-xl text-[17px] leading-[1.65] text-muted sm:text-[19px]">
+                    From case files to court-ready drafts, Lirava keeps every answer grounded in your documents.
+                  </p>
+                  <div className="mt-8 flex flex-wrap items-center gap-x-8 gap-y-4">
+                    <div className="flex flex-wrap gap-3">
+                      <Link href="/login" className="inline-flex h-12 items-center gap-2 rounded-lg bg-action px-6 text-[15px] font-semibold text-on-dark">
+                        Open Lirava <ArrowRight className="size-4" />
+                      </Link>
+                      <a
+                        href="#how-it-works"
+                        className="inline-flex h-12 items-center rounded-lg bg-card px-6 text-[15px] font-medium text-foreground shadow-elevated"
+                      >
+                        See how it works
+                      </a>
+                    </div>
+                    <div aria-label="Supported files" className="flex flex-wrap gap-x-5 gap-y-1 text-[12px] text-muted">
+                      <span>PDF case files</span>
+                      <span>DOCX drafts</span>
+                      <span>Scanned judgments</span>
+                    </div>
+                  </div>
+                </motion.div>
               </div>
-              <MatterDesk />
-            </div>
-            <div className="soli-hero-preview relative mx-auto mt-10 max-w-6xl sm:mt-14">
-              <ProductPreview />
-            </div>
-          </div>
-        </section>
-        <section className="bg-background">
-          <div className="mx-auto grid max-w-7xl gap-4 px-4 py-5 sm:grid-cols-3 sm:px-6 lg:px-8">
-            <div className="rounded-2xl border border-navy/10 bg-background p-5 text-[16px] font-semibold text-foreground">
-              <Check className="mb-4 size-6 text-brand" />
-              <p>Built for Indian litigation</p>
-              <span className="mt-1 block text-[14px] font-normal text-muted">
-                Designed around legal work, not generic chat.
-              </span>
-            </div>
-            <div className="rounded-2xl border border-navy/10 bg-card p-5 text-[16px] font-semibold text-foreground">
-              <Search className="mb-4 size-6 text-brand" />
-              <p>Every answer cited</p>
-              <span className="mt-1 block text-[14px] font-normal text-muted">
-                File, page, passage, and library context.
-              </span>
-            </div>
-            <div className="rounded-2xl border border-navy/10 bg-background p-5 text-[16px] font-semibold text-foreground">
-              <LockKeyhole className="mb-4 size-6 text-brand" />
-              <p>Your files stay private</p>
-              <span className="mt-1 block text-[14px] font-normal text-muted">
-                Private material stays in the right workspace.
-              </span>
+              <motion.div
+                className="mt-12 sm:mt-14"
+                initial={{ opacity: 0, y: 28 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.9, delay: 0.25, ease: marketingEase }}
+              >
+                <HeroStage>
+                  <ProductDemo />
+                </HeroStage>
+              </motion.div>
             </div>
           </div>
         </section>
-        <section className="bg-background py-20 sm:py-28">
-          <div className="mx-auto grid max-w-6xl gap-12 px-4 sm:px-6 lg:grid-cols-2 lg:px-8">
-            <div>
-              <h2 className="font-serif text-[38px] leading-[1.06] tracking-[-0.04em] sm:text-[52px]">
-                Legal research should not begin with a blank search box.
-              </h2>
-            </div>
-            <div className="space-y-5 text-[16px] leading-relaxed text-muted">
-                <p>
-                Litigation teams spend hours locating the right file, checking
-                the exact provision, and rebuilding context before a draft can
-                even begin.
+
+        <section className="border-b border-border bg-background">
+          <div className="mx-auto grid max-w-7xl gap-px px-4 py-8 sm:grid-cols-3 sm:px-6 lg:px-8">
+            {trust.map(([Icon, title, text], i) => (
+              <Reveal key={title} delay={i * 0.08}>
+                <div className="flex gap-4 sm:px-4">
+                  <Icon className="mt-0.5 size-5 shrink-0 text-brand" />
+                  <div>
+                    <p className="text-[15px] font-semibold text-foreground">{title}</p>
+                    <p className="mt-1 text-[14px] text-muted">{text}</p>
+                  </div>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+        </section>
+
+        <RailSection className="bg-background">
+          <div className="grid gap-12 lg:grid-cols-2">
+            <ScrollWords
+              text="Legal research should not begin with a blank search box."
+              className="font-serif text-[38px] leading-[1.06] tracking-[-0.04em] sm:text-[52px]"
+            />
+            <Reveal className="space-y-5 text-[16px] leading-relaxed text-muted">
+              <p>
+                Litigation teams spend hours locating the right file, checking the exact provision, and rebuilding context before a
+                draft can even begin.
               </p>
               <p>
-                Generic AI can make that harder when it produces a confident
-                answer without a source. Lirava keeps the underlying material in
-                view, so the lawyer can verify the work.
+                Generic AI can make that harder when it produces a confident answer without a source. Lirava keeps the underlying
+                material in view, so the lawyer can verify the work.
               </p>
-            </div>
+            </Reveal>
           </div>
-        </section>
-        <section
-          id="how-it-works"
-          className="bg-background py-20 text-foreground sm:py-28"
-        >
-          <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-            <h2 className="max-w-2xl font-serif text-[38px] leading-[1.06] tracking-[-0.04em] sm:text-[52px]">
-              From case file to cited answer.
-            </h2>
-            <div className="mt-12 grid gap-4 md:grid-cols-3">
-              {[
-                [
-                  Upload,
-                  "Upload case files",
-                  "Add a matter bundle, selected documents, or a firm-approved resource.",
-                ],
-                [
-                  Search,
-                  "Ask in plain language",
-                  "Ask about a notice, limitation issue, clause, or evidentiary point.",
-                ],
-                [
-                  Check,
-                  "Verify the answer",
-                  "Review the filename, page, excerpt, and library context behind it.",
-                ],
-              ].map(([Icon, title, text]) => {
-                const StepIcon = Icon as typeof Upload;
-                return (
-                  <article
-                    key={title as string}
-                    className="rounded-2xl border border-navy/10 bg-card p-6"
-                  >
-                    <StepIcon className="size-5 text-foreground" />
-                    <h3 className="mt-4 text-[17px] font-semibold">
-                      {title as string}
-                    </h3>
-                    <p className="mt-2 text-[14px] leading-relaxed text-muted">
-                      {text as string}
-                    </p>
-                  </article>
-                );
-              })}
-            </div>
-          </div>
-        </section>
-        <section id="product" className="bg-background py-20 sm:py-28">
-          <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-            <div className="max-w-2xl">
-              <h2 className="font-serif text-[38px] leading-[1.06] tracking-[-0.04em] sm:text-[52px]">
-                Useful at each stage of a matter.
-              </h2>
-            </div>
-            <div className="mt-12 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {features.map(([Icon, title, text]) => (
-                <article
-                  key={title}
-                  className="rounded-2xl border border-navy/10 bg-card p-6"
-                >
-                  <Icon className="size-5 text-brand" />
-                  <h3 className="mt-5 text-[17px] font-semibold">{title}</h3>
-                  <p className="mt-2 text-[14px] leading-relaxed text-muted">
-                    {text}
-                  </p>
-                </article>
-              ))}
-            </div>
-          </div>
-        </section>
-        <section id="knowledge" className="bg-navy py-20 text-on-dark sm:py-28">
-          <div className="mx-auto grid max-w-6xl gap-12 px-4 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:px-8">
-            <div>
-              <h2 className="font-serif text-[38px] leading-[1.06] tracking-[-0.04em] sm:text-[52px]">
-                Exact statute text, with a clear trail back to its source.
-              </h2>
-              <p className="mt-5 text-[16px] leading-relaxed text-on-dark-muted">
-                Lirava structures statutes so a legal team can navigate from an
-                Act to the relevant chapter, section, sub-section, proviso, or
-                explanation.
-              </p>
-            </div>
-            <div className="rounded-2xl border border-white/12 bg-white/8 p-5 sm:p-7">
-              <div className="grid gap-2 text-[13px]">
-                <div className="rounded-lg bg-white/8 px-3 py-2 text-on-dark-muted">
-                  Indian Contract Act, 1872
-                </div>
-                <div className="ml-4 rounded-lg border-l border-on-dark/40 px-3 py-2 text-on-dark-muted">
-                  Chapter VI: Of the consequences of breach
-                </div>
-                <div className="ml-8 rounded-lg bg-action px-3 py-2 font-semibold text-on-dark">
-                  Section 73: Compensation for loss or damage caused by breach
-                  of contract
-                </div>
-                <div className="ml-12 rounded-lg border-l border-white/15 px-3 py-2 text-on-dark-muted">
-                  Text, version, and official source retained with the result
-                </div>
-              </div>
-              <div className="mt-6 rounded-xl border border-on-dark/20 bg-background p-4">
-                <p className="text-[11px] font-medium text-foreground">
-                  Section 73 example
-                </p>
-                <p className="mt-2 text-[13px] leading-relaxed text-muted">
-                  When a contract has been broken, the party who suffers by such
-                  breach is entitled to receive compensation for loss or damage
-                  caused to it thereby…
-                </p>
-                <p className="mt-3 text-[11px] text-muted">
-                  Source: Indian Contract Act, 1872, statutory text
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-        <section id="security" className="bg-background py-20 sm:py-28">
-          <div className="mx-auto grid max-w-6xl gap-10 px-4 sm:px-6 lg:grid-cols-[0.85fr_1.15fr] lg:px-8">
-            <div>
+        </RailSection>
+
+        <ProductPanels />
+        <HowItWorks />
+        <FeatureGrid />
+        <StatuteExplorer />
+
+        <RailSection id="security" className="bg-background">
+          <div className="grid gap-10 lg:grid-cols-[0.85fr_1.15fr]">
+            <Reveal>
               <LockKeyhole className="size-6 text-brand" />
               <h2 className="mt-6 font-serif text-[38px] leading-[1.06] tracking-[-0.04em] sm:text-[52px]">
                 Legal work should remain within the right workspace.
               </h2>
               <p className="mt-5 text-[16px] leading-relaxed text-muted">
-                Lirava separates a firm’s shared library from each lawyer’s
-                private workspace. Your team decides what is shared; private
-                uploads remain private.
+                Lirava separates a firm’s shared library from each lawyer’s private workspace. Your team decides what is shared;
+                private uploads remain private.
               </p>
-              <Link
-                href="/security"
-                className="mt-6 inline-flex items-center gap-2 text-[14px] font-semibold text-brand"
-              >
-                Read security details <ArrowRight className="size-4" />
+              <Link href="/security" className="group mt-6 inline-flex items-center gap-2 text-[14px] font-semibold text-brand">
+                Read security details <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
               </Link>
-            </div>
+            </Reveal>
             <div className="grid gap-3 sm:grid-cols-2">
-              <div className="rounded-2xl border border-navy/10 bg-card p-6">
-                <h3 className="font-semibold">Private workspaces</h3>
-                <p className="mt-2 text-[14px] leading-relaxed text-muted">
-                  Personal uploads are kept separate from colleagues’ work.
-                </p>
-              </div>
-              <div className="rounded-2xl border border-navy/10 bg-highlight p-6">
-                <h3 className="font-semibold">Firm controls</h3>
-                <p className="mt-2 text-[14px] leading-relaxed text-muted">
-                  Approved firm material can be managed in a shared library.
-                </p>
-              </div>
+              <Reveal delay={0.08}>
+                <div className="motion-card h-full rounded-2xl border border-border bg-card p-6">
+                  <h3 className="font-semibold">Private workspaces</h3>
+                  <p className="mt-2 text-[14px] leading-relaxed text-muted">
+                    Personal uploads are kept separate from colleagues’ work.
+                  </p>
+                </div>
+              </Reveal>
+              <Reveal delay={0.16}>
+                <div className="motion-card h-full rounded-2xl border border-border bg-highlight p-6">
+                  <h3 className="font-semibold">Firm controls</h3>
+                  <p className="mt-2 text-[14px] leading-relaxed text-muted">
+                    Approved firm material can be managed in a shared library.
+                  </p>
+                </div>
+              </Reveal>
             </div>
           </div>
-        </section>
-        <section
-          id="pricing"
-          className="bg-background py-20 text-foreground sm:py-28"
-        >
-          <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-            <h2 className="font-serif text-[38px] tracking-[-0.04em] sm:text-[52px]">
-              Start with one practice group. Grow from there.
-            </h2>
+        </RailSection>
+
+        <RailSection id="pricing" className="bg-background text-foreground">
+          <div>
+            <FocusText>
+              <h2 className="font-serif text-[38px] tracking-[-0.04em] sm:text-[52px]">Start with one practice group. Grow from there.</h2>
+            </FocusText>
             <div className="mt-12 grid gap-4 lg:grid-cols-3">
-              {marketing.pricing.map((tier) => (
-                <article
-                  key={tier.name}
-                  className="rounded-2xl border border-navy/10 bg-card p-6"
-                >
-                  <h3 className="text-[18px] font-semibold">{tier.name}</h3>
-                  <p className="mt-2 text-[14px] text-muted">{tier.detail}</p>
-                  <p className="mt-6 font-serif text-[34px] text-foreground">
-                    {tier.price}
-                  </p>
-                  <p className="text-[11px] text-muted">
-                    Per seat, volume and storage based
-                  </p>
-                  <ul className="mt-6 space-y-3">
-                    {tier.items.map((item) => (
-                      <li
-                        key={item}
-                        className="flex gap-2 text-[13px] text-muted"
-                      >
-                        <Check className="mt-0.5 size-3.5 shrink-0 text-brand" />
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-                  <a
-                    href={`mailto:${marketing.contactEmail}`}
-                    className="mt-7 inline-flex text-[14px] font-semibold text-brand"
-                  >
-                    Contact us <ArrowRight className="ml-2 size-4" />
-                  </a>
-                </article>
+              {marketing.pricing.map((tier, i) => (
+                <Reveal key={tier.name} delay={i * 0.08}>
+                  <article className="motion-card h-full rounded-2xl border border-border bg-card p-6 hover:border-brand/40">
+                    <h3 className="text-[18px] font-semibold">{tier.name}</h3>
+                    <p className="mt-2 text-[14px] text-muted">{tier.detail}</p>
+                    <p className="mt-6 font-serif text-[24px] leading-snug text-foreground">{tier.price}</p>
+                    <p className="text-[11px] text-muted">Per seat, volume and storage based</p>
+                    <ul className="mt-6 space-y-3">
+                      {tier.items.map((item) => (
+                        <li key={item} className="flex gap-2 text-[13px] text-muted">
+                          <Check className="mt-0.5 size-3.5 shrink-0 text-brand" />
+                          {item}
+                        </li>
+                      ))}
+                    </ul>
+                    <a href={`mailto:${marketing.contactEmail}`} className="group mt-7 inline-flex items-center text-[14px] font-semibold text-brand">
+                      Contact us <ArrowRight className="ml-2 size-4 transition-transform group-hover:translate-x-1" />
+                    </a>
+                  </article>
+                </Reveal>
               ))}
             </div>
           </div>
-        </section>
-        <section id="faq" className="bg-background py-20 sm:py-28">
-          <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
-            <h2 className="text-center font-serif text-[38px] tracking-[-0.04em] sm:text-[52px]">
-              Questions worth asking.
+        </RailSection>
+
+        <FitsEverywhere />
+
+        <RailSection id="faq" className="bg-background">
+          <div className="mx-auto max-w-3xl">
+            <FocusText>
+              <h2 className="text-center font-serif text-[38px] tracking-[-0.04em] sm:text-[52px]">Questions worth asking.</h2>
+            </FocusText>
+            <Reveal className="mt-10" delay={0.08}>
+              <Faq items={questions} />
+            </Reveal>
+          </div>
+        </RailSection>
+
+        <section className="desk relative overflow-hidden border-t border-border py-20 text-center sm:py-24">
+          <Reveal className="mx-auto max-w-3xl px-4">
+            <h2 className="font-serif text-[34px] leading-[1.08] tracking-[-0.03em] sm:text-[46px]">
+              Bring your next matter into Lirava.
             </h2>
-            <div className="mt-10 divide-y divide-border border-y border-navy/10">
-              {questions.map(([question, answer]) => (
-                <details key={question} className="group py-5">
-                  <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-[15px] font-semibold">
-                    <span>{question}</span>
-                    <ChevronDown className="size-4 shrink-0 text-brand transition-transform group-open:rotate-180" />
-                  </summary>
-                  <p className="mt-3 max-w-2xl text-[14px] leading-relaxed text-muted">
-                    {answer}
-                  </p>
-                </details>
-              ))}
+            <div className="mt-8 flex flex-wrap justify-center gap-3">
+              <Link href="/login" className="inline-flex h-12 items-center gap-2 rounded-lg bg-action px-6 text-[15px] font-semibold text-on-dark">
+                Open Lirava <ArrowRight className="size-4" />
+              </Link>
+              <a
+                href={`mailto:${marketing.contactEmail}`}
+                className="inline-flex h-12 items-center rounded-lg bg-card px-6 text-[15px] font-medium text-foreground shadow-elevated"
+              >
+                Contact us
+              </a>
             </div>
-          </div>
+          </Reveal>
         </section>
       </main>
       <footer className="bg-navy text-on-dark-muted">
         <div className="mx-auto grid max-w-7xl gap-10 px-4 py-12 sm:grid-cols-2 sm:px-6 lg:grid-cols-[1.6fr_repeat(3,1fr)] lg:px-8">
           <div>
-            <p className="font-serif text-[32px] tracking-[-.04em] text-on-dark">
-              Lirava
-            </p>
-            <p className="mt-3 max-w-xs text-[13px] leading-relaxed">
-              A source-aware workspace for legal professionals.
-            </p>
+            <p className="font-serif text-[32px] tracking-[-.04em] text-on-dark">Lirava</p>
+            <p className="mt-3 max-w-xs text-[13px] leading-relaxed">A source-aware workspace for legal professionals.</p>
           </div>
           <div>
-            <p className="text-[12px] font-semibold text-on-dark">
-              Product
-            </p>
+            <p className="text-[12px] font-semibold text-on-dark">Product</p>
             <div className="mt-4 grid gap-2 text-[13px]">
               <a href="#product">Overview</a>
               <a href="#how-it-works">How it works</a>
@@ -697,18 +426,14 @@ export default function MarketingSite() {
             </div>
           </div>
           <div>
-            <p className="text-[12px] font-semibold text-on-dark">
-              Company
-            </p>
+            <p className="text-[12px] font-semibold text-on-dark">Company</p>
             <div className="mt-4 grid gap-2 text-[13px]">
               <a href="#faq">FAQ</a>
               <a href={`mailto:${marketing.contactEmail}`}>Contact</a>
             </div>
           </div>
           <div>
-            <p className="text-[12px] font-semibold text-on-dark">
-              Legal
-            </p>
+            <p className="text-[12px] font-semibold text-on-dark">Legal</p>
             <div className="mt-4 grid gap-2 text-[13px]">
               <Link href="/security">Security</Link>
               <Link href="/privacy">Privacy</Link>
@@ -718,8 +443,7 @@ export default function MarketingSite() {
         </div>
         <div className="border-t border-white/10">
           <p className="mx-auto max-w-7xl px-4 py-5 text-[12px] sm:px-6 lg:px-8">
-            © 2026 Lirava. AI assistance for legal professionals; not legal
-            advice.
+            © 2026 Lirava. AI assistance for legal professionals; not legal advice.
           </p>
         </div>
       </footer>

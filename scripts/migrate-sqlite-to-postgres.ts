@@ -6,7 +6,7 @@ import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
 import * as schema from "../src/db/schema";
 
-const DATA_DIR = process.env.DOTS_DATA_DIR || path.join(process.cwd(), ".data");
+const DATA_DIR = process.env.LEGACY_DATA_DIR || path.join(process.cwd(), ".data");
 const SQLITE_PATH = path.join(DATA_DIR, "dots.db");
 
 async function main() {

@@ -2,15 +2,15 @@
 
 import { Suspense, use, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import Markdown from "react-markdown";
+import Markdown, { defaultUrlTransform, type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {
   AppWindow, ArrowUp, Plus, Brain, Download,
-  ExternalLink, FileText, Paperclip, Plug, Check, Clock, Globe, KeyRound,
+  FileText, Paperclip, Check, Clock, Globe, KeyRound,
   Laptop, MessageSquare, MonitorSmartphone, Search, ShieldAlert, Sparkles,
-  Terminal, X, Scale, Copy, ThumbsUp, ThumbsDown, RotateCcw, Square,
+  Terminal, X, Folder, Scale, Copy, ThumbsUp, ThumbsDown, RotateCcw, Square,
 } from "lucide-react";
-import { confirmConnectCard, renameConversation, resolveCard, resumeDot, sendMessage, startConversation, stopDot } from "@/app/actions";
+import { renameConversation, sendMessage, startConversation } from "@/app/actions";
 import {
   addArtifactLocally,
   addConversationLocally,
@@ -19,15 +19,18 @@ import {
   removeMessageLocally,
   renameConversationLocally,
   setActiveArtifact,
+  setBoardWidthPreference,
   useStore,
 } from "@/lib/store";
 import { ArtifactBoard, ArtifactCard } from "./artifacts";
+import { SourceList } from "./SourceList";
+import { SourcePanel } from "./chat/SourcePanel";
+import { WorkTrace, type TraceRow } from "./chat/WorkTrace";
 import { detectLegalDocument } from "@/lib/artifacts/detector";
-import { getSuggestionsForDot } from "@/lib/personas";
 import { parseToolCalls, toolIcon } from "@/lib/tool-calls";
 import { stripThinkingBlocks } from "@/lib/strip-thinking";
 import { buildConversationTitle } from "@/lib/conversation-title";
-import type { Attachment, DocumentArtifact, Dot, Message } from "@/lib/types";
+import type { Attachment, Citation, DocumentArtifact, Vakil, Message } from "@/lib/types";
 
 // ── History loader ───────────────────────────────────────────────────────────
 const historyLoads = new Map<string, Promise<true>>();
@@ -42,6 +45,18 @@ function loadHistory(convId: string) {
   }
   return p;
 }
+/** Whether the server already saved this message (a send can time out after the server received it). */
+async function serverHasMessage(convId: string, messageId: string): Promise<boolean> {
+  try {
+    const response = await fetch(`/api/conversations/${encodeURIComponent(convId)}`, { cache: "no-store" });
+    if (!response.ok) return false;
+    const data = (await response.json()) as { messages?: Array<{ id: string }> };
+    return Boolean(data.messages?.some((message) => message.id === messageId));
+  } catch {
+    return false;
+  }
+}
+
 function HistoryLoader({ convId }: { convId: string }) {
   use(loadHistory(convId));
   return null;
@@ -50,8 +65,8 @@ function HistoryLoader({ convId }: { convId: string }) {
 // ── Chat max-width: matches ChatGPT / Claude centered column ─────────────────
 const COL = "mx-auto w-full max-w-[768px]";
 
-/** `conversation`: a conversation id, "new" for a fresh chat, or undefined for the dot's latest chat. */
-export default function Chat({ dot, conversation, matterId }: { dot: Dot; conversation?: string; matterId?: string }) {
+/** `conversation`: a conversation id, "new" for a fresh chat, or undefined for the vakil's latest chat. */
+export default function Chat({ vakil, conversation, matterId, matterLabel }: { vakil: Vakil; conversation?: string; matterId?: string; matterLabel?: string }) {
   const router = useRouter();
   const all = useStore((s) => s.messages);
   const conversations = useStore((s) => s.conversations);
@@ -62,12 +77,10 @@ export default function Chat({ dot, conversation, matterId }: { dot: Dot; conver
       conversations
         .filter(
           (c) =>
-            c.dotId === dot.id ||
-            (dot.id.startsWith("vakil_") && c.dotId === dot.id.replace(/^vakil_/, "dot_")) ||
-            (dot.id.startsWith("dot_") && c.dotId === dot.id.replace(/^dot_/, "vakil_")),
+            c.vakilId === vakil.id,
         )
         .sort((a, b) => (b.updatedAt || b.createdAt) - (a.updatedAt || a.createdAt)),
-    [conversations, dot.id],
+    [conversations, vakil.id],
   );
 
   const convId =
@@ -75,40 +88,36 @@ export default function Chat({ dot, conversation, matterId }: { dot: Dot; conver
       ? activeConvId
       : conversation ?? activeConvId ?? mine[0]?.id ?? null;
 
-  // Belt and braces: never render content-less dot rows (blank streaming
+  // Belt and braces: never render content-less vakil rows (blank streaming
   // placeholders). The server no longer persists them; this hides stragglers.
   const messages = useMemo(() => {
     if (!convId) return [];
     const filtered = all.filter(
       (m) =>
         (m.conversationId === convId ||
-          (!m.conversationId && (m.dotId === dot.id || m.dotId === dot.id.replace(/^vakil_/, "dot_")))) &&
+          (!m.conversationId && m.vakilId === vakil.id)) &&
         !m.channelId &&
-        (m.role !== "dot" || m.title || m.attachments?.length || (m.text.trim() !== "" && m.text.trim() !== "…")),
+        (m.role !== "vakil" || m.title || m.attachments?.length || (m.text.trim() !== "" && m.text.trim() !== "…")),
     );
 
-    // Deduplicate consecutive identical user messages (e.g. from rapid double-submits)
-    const deduped: Message[] = [];
-    for (let i = 0; i < filtered.length; i++) {
-      const cur = filtered[i];
-      const prev = deduped[deduped.length - 1];
-      if (
-        prev &&
-        prev.role === "user" &&
-        cur.role === "user" &&
-        prev.text.trim() === cur.text.trim() &&
-        Math.abs(cur.createdAt - prev.createdAt) < 120_000
-      ) {
-        continue;
-      }
-      deduped.push(cur);
-    }
-    return deduped;
-  }, [all, convId, dot.id]);
+    // Every message has a unique id and the server ignores true retries, so nothing is hidden here:
+    // sending the same sentence twice on purpose shows both.
+    return filtered;
+  }, [all, convId, vakil.id]);
   const activeArtifactId = useStore((s) => s.activeArtifactId);
+  // The source behind a citation opens beside the chat, in the same pane as documents.
+  const [openSource, setOpenSource] = useState<Citation | null>(null);
+  const rightPane: "artifact" | "source" | null = activeArtifactId ? "artifact" : openSource ? "source" : null;
+  const openCitation = (citation: Citation) => {
+    setActiveArtifact(null);
+    setOpenSource(citation);
+  };
   const hasKey = useStore((s) => s.computer.hasKey || s.computer.openRouter !== null || s.computer.nvidia !== null || s.computer.groq !== null || s.computer.antigravity !== null);
   const [, start] = useTransition();
   const [submitting, setSubmitting] = useState(false);
+  // An answer being written (or waiting for a free slot) for this chat, as reported by the live stream.
+  const runPhase = useStore((s) => (convId ? s.running[convId] : undefined));
+  const busy = submitting || Boolean(runPhase);
   const stopRequested = useRef(false);
   const [sendError, setSendError] = useState<string | null>(null);
   // Suggestion cards fill the composer (ChatGPT-style) instead of sending.
@@ -116,13 +125,13 @@ export default function Chat({ dot, conversation, matterId }: { dot: Dot; conver
   const fillComposer = (text: string) => setDraft({ text, nonce: Date.now() });
 
   const fresh = !messages.some((m) => m.role === "user" || m.from === "voice");
-  const shown = fresh && messages[0]?.role === "dot" ? messages.slice(1) : messages;
-  const hasActiveDotOutput =
-    messages[messages.length - 1]?.role === "dot" &&
+  const shown = fresh && messages[0]?.role === "vakil" ? messages.slice(1) : messages;
+  const hasActiveVakilOutput =
+    messages[messages.length - 1]?.role === "vakil" &&
     (messages[messages.length - 1]?.text || "").trim().length > 0;
   const workingHere =
-    (submitting || (dot.status === "working" && (convId === mine[0]?.id || !convId))) &&
-    !hasActiveDotOutput;
+    (busy || (vakil.status === "working" && (convId === mine[0]?.id || !convId))) &&
+    !hasActiveVakilOutput;
 
   const send = (text: string, attachments: Attachment[] = []) => {
     if (submitting) return;
@@ -139,7 +148,7 @@ export default function Chat({ dot, conversation, matterId }: { dot: Dot; conver
       setActiveConvId(targetConvId);
       addConversationLocally({
         id: targetConvId,
-        dotId: dot.id,
+        vakilId: vakil.id,
         title: autoTitle,
         userId: "",
         createdAt: Date.now(),
@@ -151,7 +160,7 @@ export default function Chat({ dot, conversation, matterId }: { dot: Dot; conver
     const userMsgId = `msg-${crypto.randomUUID()}`;
     const userMsg: Message = {
       id: userMsgId,
-      dotId: dot.id,
+      vakilId: vakil.id,
       conversationId: targetConvId,
       role: "user",
       text,
@@ -167,10 +176,10 @@ export default function Chat({ dot, conversation, matterId }: { dot: Dot; conver
           | undefined;
 
         if (convId) {
-          result = await sendMessage(dot.id, text, attachments, targetConvId, userMsgId);
+          result = await sendMessage(vakil.id, text, attachments, targetConvId, userMsgId);
         } else {
-          const canonicalId = dot.id.startsWith("dot_") ? dot.id.replace(/^dot_/, "vakil_") : dot.id;
-          const startRes = await startConversation(dot.id, text, attachments, targetConvId, userMsgId, matterId);
+          const canonicalId = vakil.id;
+          const startRes = await startConversation(vakil.id, text, attachments, targetConvId, userMsgId, matterId);
           result = startRes;
           router.replace(`/vakil/${canonicalId}?c=${targetConvId}`);
         }
@@ -185,6 +194,12 @@ export default function Chat({ dot, conversation, matterId }: { dot: Dot; conver
       } catch (err) {
         console.error("Failed to send message:", err);
         if (stopRequested.current) return;
+        // If the server already has the question, keep it on screen: the answer arrives through the live
+        // stream, and sending it again would only ask the same question twice.
+        if (await serverHasMessage(targetConvId, userMsgId)) {
+          setSendError("This is taking longer than usual. Your question was received, and the answer will appear here when it is ready.");
+          return;
+        }
         removeMessageLocally(userMsgId);
         fillComposer(text);
         const raw = err instanceof Error ? err.message : "";
@@ -199,23 +214,35 @@ export default function Chat({ dot, conversation, matterId }: { dot: Dot; conver
       }
     });
   };
+  // Ask the same question again for a fresh answer (the latest answer's Regenerate action).
+  const lastUser = [...messages].reverse().find((m) => m.role === "user");
+  const regenerate = lastUser ? () => send(lastUser.text, lastUser.attachments ?? []) : undefined;
+
+  // A question that never got an answer should not leave the screen silent.
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(Date.now()), 15_000);
+    return () => window.clearInterval(id);
+  }, []);
+  const lastMessage = messages[messages.length - 1];
+  const unanswered = !fresh && !busy && vakil.status !== "working" && lastMessage?.role === "user" && now - lastMessage.createdAt > 45_000;
+
   const stop = () => {
-    if (!submitting) return;
+    if (!busy) return;
     stopRequested.current = true;
-    void stopDot(dot.id).catch(() => undefined).finally(() => setSubmitting(false));
+    void fetch("/api/agent/abort", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ vakilId: vakil.id, conversationId: convId ?? undefined }),
+    })
+      .catch(() => undefined)
+      .finally(() => setSubmitting(false));
   };
   // ── Resizable split pane between Chat area and Document Preview area ───────
-  const [boardWidth, setBoardWidth] = useState<number>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("soli_artifact_board_width");
-      if (saved) {
-        const parsed = parseInt(saved, 10);
-        if (!isNaN(parsed) && parsed >= 280 && parsed <= 2400) return parsed;
-      }
-      return Math.round(Math.max(480, window.innerWidth * 0.5));
-    }
-    return 640;
-  });
+  // The saved width comes from PostgreSQL (through the store); while dragging, the live width is kept here.
+  const savedWidth = useStore((s) => s.boardWidth);
+  const [dragWidth, setBoardWidth] = useState<number | null>(null);
+  const boardWidth = dragWidth ?? savedWidth ?? (typeof window === "undefined" ? 640 : Math.round(Math.max(480, window.innerWidth * 0.5)));
   const [isResizingSplit, setIsResizingSplit] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(1200);
@@ -266,9 +293,8 @@ export default function Chat({ dot, conversation, matterId }: { dot: Dot; conver
       const minBoard = 280;
       const maxBoard = Math.max(minBoard, curTotalW - 280);
       const finalW = Math.max(minBoard, Math.min(maxBoard, startWidth + deltaX));
-      try {
-        localStorage.setItem("soli_artifact_board_width", String(Math.round(finalW)));
-      } catch {}
+      setBoardWidthPreference(Math.round(finalW));
+      setBoardWidth(null);
     };
 
     window.addEventListener("pointermove", onPointerMove);
@@ -279,10 +305,8 @@ export default function Chat({ dot, conversation, matterId }: { dot: Dot; conver
   const handleResetSplit = () => {
     const totalW = containerRef.current?.getBoundingClientRect().width ?? window.innerWidth;
     const half = Math.round(totalW * 0.5);
-    setBoardWidth(half);
-    try {
-      localStorage.setItem("soli_artifact_board_width", String(half));
-    } catch {}
+    setBoardWidth(null);
+    setBoardWidthPreference(half);
   };
 
   const minChatWidth = 320;
@@ -299,7 +323,7 @@ export default function Chat({ dot, conversation, matterId }: { dot: Dot; conver
       {/* Chat conversation column */}
       <div
         className={`flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden ${
-          activeArtifactId ? "hidden lg:flex" : ""
+          rightPane ? "hidden lg:flex" : ""
         } ${
           isResizingSplit
             ? "transition-none select-none pointer-events-none"
@@ -327,39 +351,77 @@ export default function Chat({ dot, conversation, matterId }: { dot: Dot; conver
             {/* Welcome screen on fresh chat */}
             {fresh && (
               <div className={`${COL} flex flex-col items-center justify-center gap-6`}>
-                <Welcome dot={dot} onSuggest={fillComposer} />
+                <Welcome />
                 <div className="w-full">
-                  <Composer key="new-centered" dot={dot} onSend={send} onStop={stop} submitting={submitting} draft={draft} />
+                  <Composer key="new-centered" vakil={vakil} onSend={send} onStop={stop} submitting={busy} draft={draft} context={matterLabel} />
                 </div>
               </div>
             )}
 
             {/* Message list */}
             <div className={`${COL} pt-6 pb-8 space-y-6`}>
-              {shown.map((m, i) => (
-                <div key={m.id} className="animate-message-rise">
-                  {(i === 0 || m.createdAt - shown[i - 1].createdAt > 60 * 60_000) && (
-                    <DateSeparator ts={m.createdAt} />
-                  )}
-                  <MessageRow
-                    m={m}
-                    dot={dot}
-                    isStreaming={
-                      m.role === "dot" &&
-                      i === shown.length - 1 &&
-                      (submitting || dot.status === "working")
-                    }
-                  />
-                </div>
-              ))}
-
-              {workingHere && <ThinkingStatus />}
+              {(() => {
+                // Consecutive activity messages become one work trace; it ends when the next message arrives.
+                type Block = { type: "msg"; m: Message; i: number } | { type: "trace"; items: Message[]; key: string };
+                const blocks: Block[] = [];
+                shown.forEach((m, i) => {
+                  if (m.role === "activity") {
+                    const last = blocks[blocks.length - 1];
+                    if (last?.type === "trace") last.items.push(m);
+                    else blocks.push({ type: "trace", items: [m], key: m.id });
+                  } else blocks.push({ type: "msg", m, i });
+                });
+                const working = busy || vakil.status === "working";
+                const lastIsTrace = blocks[blocks.length - 1]?.type === "trace";
+                return (
+                  <>
+                    {blocks.map((b, bi) => {
+                      if (b.type === "trace") {
+                        const live = bi === blocks.length - 1 && working;
+                        const next = blocks[bi + 1];
+                        const start = b.items[0].createdAt;
+                        const end = next?.type === "msg" ? next.m.createdAt : b.items[b.items.length - 1].createdAt;
+                        const rows: TraceRow[] = b.items.map((item) => {
+                          const [label, ...rest] = item.text.split(" · ");
+                          return { id: item.id, label, detail: rest.join(": "), Icon: ACTIVITY_ICON.find(([re]) => re.test(label))?.[1] ?? Sparkles };
+                        });
+                        return <WorkTrace key={b.key} rows={rows} live={live} queued={live && runPhase === "queued"} seconds={Math.round((end - start) / 1000)} />;
+                      }
+                      const { m, i } = b;
+                      const isLastReply = m.role === "vakil" && i === shown.length - 1;
+                      return (
+                        <div key={m.id} className="animate-message-rise">
+                          {(i === 0 || m.createdAt - shown[i - 1].createdAt > 60 * 60_000) && <DateSeparator ts={m.createdAt} />}
+                          <MessageRow
+                            m={m}
+                            vakil={vakil}
+                            isStreaming={isLastReply && working}
+                            onOpenSource={openCitation}
+                            onRegenerate={isLastReply && !working ? regenerate : undefined}
+                          />
+                        </div>
+                      );
+                    })}
+                    {workingHere && !lastIsTrace && <WorkTrace rows={[]} live queued={runPhase === "queued"} seconds={null} />}
+                  </>
+                );
+              })()}
             </div>
           </div>
         </div>
 
         {/* Composer — same max-width column, pinned to bottom */}
         {!fresh && <div className="w-full min-w-0 px-4 pb-4 sm:px-6 sm:pb-6">
+          {unanswered && !sendError && (
+            <div className={`${COL} mb-2`}>
+              <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card px-3.5 py-2 text-[13px] text-muted">
+                <span>No reply yet. Lirava hasn&apos;t answered your last message.</span>
+                <button type="button" onClick={() => send(lastMessage.text, lastMessage.attachments ?? [])} className="shrink-0 font-medium text-brand-readable hover:underline">
+                  Send again
+                </button>
+              </div>
+            </div>
+          )}
           {sendError && (
             <div className={`${COL} mb-2`}>
               <div className="flex items-center justify-between gap-2 rounded-lg border border-destructive/30 bg-destructive/[0.08] px-3.5 py-2 text-[13px] text-destructive">
@@ -377,13 +439,13 @@ export default function Chat({ dot, conversation, matterId }: { dot: Dot; conver
             </div>
           )}
           <div className={COL}>
-            <Composer key={convId ?? "new"} dot={dot} onSend={send} onStop={stop} submitting={submitting} draft={draft} />
+            <Composer key={convId ?? "new"} vakil={vakil} onSend={send} onStop={stop} submitting={busy} draft={draft} context={matterLabel} />
           </div>
         </div>}
       </div>
 
       {/* Artifact Board side panel with resizable split divider */}
-      {activeArtifactId && (
+      {rightPane && (
         <>
           <PaneSplitter
             onPointerDown={handleSplitterPointerDown}
@@ -392,13 +454,17 @@ export default function Chat({ dot, conversation, matterId }: { dot: Dot; conver
             chatPercent={Math.max(10, Math.min(90, Math.round(((containerWidth - effectiveBoardWidth) / (containerWidth || 1)) * 100)))}
             boardPercent={Math.max(10, Math.min(90, Math.round((effectiveBoardWidth / (containerWidth || 1)) * 100)))}
           />
-          <ArtifactBoard
-            conversationId={convId}
-            onClose={() => setActiveArtifact(null)}
-            width={effectiveBoardWidth}
-            isDragging={isResizingSplit}
-            onResetWidth={handleResetSplit}
-          />
+          {rightPane === "artifact" ? (
+            <ArtifactBoard
+              conversationId={convId}
+              onClose={() => setActiveArtifact(null)}
+              width={effectiveBoardWidth}
+              isDragging={isResizingSplit}
+              onResetWidth={handleResetSplit}
+            />
+          ) : (
+            openSource && <SourcePanel citation={openSource} onClose={() => setOpenSource(null)} width={effectiveBoardWidth} />
+          )}
         </>
       )}
     </div>
@@ -429,19 +495,19 @@ function PaneSplitter({
       {/* Hairline guide */}
       <div
         className={`h-full w-px transition-colors duration-150 ${
-          isDragging ? "w-[2px] bg-brand" : "bg-black/10 group-hover:bg-brand/60"
+          isDragging ? "w-[2px] bg-brand" : "bg-border group-hover:bg-brand/60"
         }`}
       />
 
-      {/* Center grip handle with grab dots */}
+      {/* Center grip handle with grab vakils */}
       <div
-        className={`absolute top-1/2 -translate-y-1/2 flex items-center justify-center rounded-full border border-black/10 bg-card py-2.5 px-1 shadow-sm transition-colors duration-150 ${
+        className={`absolute top-1/2 -translate-y-1/2 flex items-center justify-center rounded-full border border-border bg-card py-2.5 px-1 shadow-sm transition-colors duration-150 ${
           isDragging
             ? "border-brand ring-2 ring-brand/30 scale-105 opacity-100"
             : "opacity-0 group-hover:opacity-100"
         }`}
       >
-        <div className="flex flex-col items-center gap-1 text-foreground/45">
+        <div className="flex flex-col items-center gap-1 text-foreground/60">
           <span className="size-1 rounded-full bg-current" />
           <span className="size-1 rounded-full bg-current" />
           <span className="size-1 rounded-full bg-current" />
@@ -463,42 +529,10 @@ function PaneSplitter({
 // ── Welcome screen — ChatGPT / Claude / Gemini hybrid ──────────────────────
 // Centered greeting with 2x2 suggestion cards. Clicking a card fills the
 // composer below (ChatGPT-style) — nothing is sent until the user hits Send.
-const THINKING_STEPS = [
-  "Reviewing authorities",
-  "Searching relevant case law",
-  "Checking statutory provisions",
-  "Verifying citations",
-  "Analyzing the case materials",
-  "Preparing a legal response",
-];
-
-function ThinkingStatus() {
-  const [step, setStep] = useState(0);
-
-  useEffect(() => {
-    const timer = window.setInterval(() => {
-      setStep((current) => {
-        const next = Math.floor(Math.random() * THINKING_STEPS.length);
-        return next === current ? (next + 1) % THINKING_STEPS.length : next;
-      });
-    }, 1400);
-    return () => window.clearInterval(timer);
-  }, []);
-
-  return (
-    <div className="motion-line flex items-center gap-2 rounded-full border border-brand/15 bg-card/70 px-3 py-2 shadow-sm backdrop-blur">
-      <span className="size-1.5 shrink-0 rounded-full bg-brand animate-pulse" />
-      <span key={step} className="text-[14px] text-foreground/70 animate-message-rise">
-        {THINKING_STEPS[step]}
-      </span>
-    </div>
-  );
-}
-
-function Welcome({ dot, onSuggest }: { dot: Dot; onSuggest: (text: string) => void }) {
+function Welcome() {
   const [greeting, setGreeting] = useState("Welcome back.");
-  const suggestions = getSuggestionsForDot(dot);
   useEffect(() => {
+    // Chosen after hydration on purpose: it depends on the visitor's local time, which the server cannot know.
     const hour = new Date().getHours();
     const options = hour < 5
       ? ["Burning the midnight oil?", "Late-night thinking, made easier."]
@@ -509,6 +543,7 @@ function Welcome({ dot, onSuggest }: { dot: Dot; onSuggest: (text: string) => vo
           : hour < 21
             ? ["Good evening. Let’s close the loop.", "Still working? I’m here with you.", "Let’s turn today’s questions into a clear next step."]
             : ["A quiet moment for careful thinking.", "Good night. Let’s get one more thing right.", "Late work deserves a little backup."];
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setGreeting([...options, "What should we tackle first?", "Bring me the matter on your mind.", "Ready when you are."][Math.floor(Math.random() * (options.length + 3))]);
   }, []);
   return (
@@ -516,41 +551,6 @@ function Welcome({ dot, onSuggest }: { dot: Dot; onSuggest: (text: string) => vo
       <h1 className="max-w-[540px] font-serif text-[36px] leading-[1.18] font-normal tracking-[-0.035em] text-balance text-foreground sm:text-[48px]">
         {greeting}
       </h1>
-      {dot.purpose ? (
-        <p className="hidden">
-          {dot.purpose.length > 140 ? `${dot.purpose.slice(0, 140)}…` : dot.purpose}
-        </p>
-      ) : (
-        <p className="hidden">
-          Research, drafting and matter work with cited sources from your library.
-        </p>
-      )}
-
-      <div className="hidden">
-        {suggestions.map((s, idx) => {
-          const isBail = s.id.includes("bail") || idx === 0;
-          const isNotice = s.id.includes("notice") || idx === 1;
-          const isAudit = s.id.includes("preserve") || s.id.includes("pramaan") || s.id.includes("audit");
-          const Icon = isBail ? Scale : isNotice ? FileText : isAudit ? Sparkles : Search;
-
-          return (
-            <button
-              key={s.id}
-              type="button"
-              onClick={() => onSuggest(s.template)}
-              className="group flex items-start gap-3 rounded-xl border border-border bg-card px-4 py-3.5 text-left transition-colors hover:border-brand/40 hover:bg-popover"
-            >
-              <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-brand/10 text-brand-readable">
-                <Icon className="size-4" strokeWidth={1.75} />
-              </span>
-              <span className="min-w-0">
-                <span className="block text-[14px] font-medium">{s.title}</span>
-                <span className="block truncate text-[13px] text-foreground/50">{s.subtitle}</span>
-              </span>
-            </button>
-          );
-        })}
-      </div>
     </div>
   );
 }
@@ -558,19 +558,25 @@ function Welcome({ dot, onSuggest }: { dot: Dot; onSuggest: (text: string) => vo
 // ── File upload helpers ──────────────────────────────────────────────────────
 type Upload = { key: string; name: string; state: "uploading" | "done" | "error"; file?: Attachment; error?: string };
 
-async function uploadFiles(dotId: string, list: File[]): Promise<{ files?: Attachment[]; error?: string }> {
+async function uploadFiles(vakilId: string, list: File[]): Promise<{ files?: Attachment[]; error?: string }> {
   const form = new FormData();
   for (const f of list) form.append("file", f);
-  const r = await fetch(`/api/dots/${dotId}/files`, { method: "POST", body: form });
-  return r.json();
+  try {
+    const r = await fetch(`/api/vakils/${vakilId}/files`, { method: "POST", body: form });
+    const data = (await r.json().catch(() => ({}))) as { files?: Attachment[]; error?: string };
+    if (!r.ok) return { error: data.error ?? "Upload failed" };
+    return data;
+  } catch {
+    return { error: "Upload failed. Check your connection and try again." };
+  }
 }
 
 // ── Composer ─────────────────────────────────────────────────────────────────
-function Composer({ dot, onSend, onStop, submitting = false, draft = null }: { dot: Dot; onSend: (text: string, attachments: Attachment[]) => void; onStop?: () => void; submitting?: boolean; draft?: { text: string; nonce: number } | null }) {
+function Composer({ vakil, onSend, onStop, submitting = false, draft = null, context }: { vakil: Vakil; onSend: (text: string, attachments: Attachment[]) => void; onStop?: () => void; submitting?: boolean; draft?: { text: string; nonce: number } | null; context?: string }) {
   const [text, setText] = useState("");
   const [uploads, setUploads] = useState<Upload[]>([]);
   const [dragging, setDragging] = useState(false);
-  const [pending, start] = useTransition();
+  const [pending] = useTransition();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const ready = uploads.filter((u) => u.state === "done" && u.file).map((u) => u.file!);
   const busy = uploads.some((u) => u.state === "uploading");
@@ -593,7 +599,7 @@ function Composer({ dot, onSend, onStop, submitting = false, draft = null }: { d
     if (!list.length) return;
     const batch = list.map((f) => ({ key: `${f.name}-${f.size}-${Math.random()}`, name: f.name, state: "uploading" as const }));
     setUploads((u) => [...u, ...batch]);
-    void uploadFiles(dot.id, list).then((r) =>
+    void uploadFiles(vakil.id, list).then((r) =>
       setUploads((u) =>
         u.map((x) => {
           const i = batch.findIndex((b) => b.key === x.key);
@@ -612,19 +618,6 @@ function Composer({ dot, onSend, onStop, submitting = false, draft = null }: { d
     onSend(value, ready);
   };
 
-  if (dot.status === "paused") {
-    return (
-      <div className="surface flex items-center justify-between gap-4 px-4 py-3">
-        <span className="text-[13px] text-foreground/60">
-          Lirava is paused. Any ongoing work was stopped, and it won&apos;t message you until you resume it.
-        </span>
-        <button className="btn-primary h-8 shrink-0 px-3 text-[13px]" onClick={() => start(() => resumeDot(dot.id))}>
-          Resume
-        </button>
-      </div>
-    );
-  }
-
   return (
     <div
       onDragOver={(e) => { if (e.dataTransfer.types.includes("Files")) { e.preventDefault(); setDragging(true); } }}
@@ -639,13 +632,16 @@ function Composer({ dot, onSend, onStop, submitting = false, draft = null }: { d
             {uploads.map((u) => (
               <span
                 key={u.key}
-                className={`flex h-7 items-center gap-1.5 rounded-full border px-2.5 text-[12px] ${u.state === "error" ? "border-destructive/40 text-destructive" : "border-black/10 bg-popover text-foreground/70"}`}
-                title={u.error}
+                className={`flex h-7 items-center gap-1.5 rounded-full border px-2.5 text-[12px] ${u.state === "error" ? "border-destructive/40 text-destructive" : "border-border bg-popover text-foreground/70"}`}
+                title={u.error ?? u.file?.index?.note}
               >
                 <Paperclip className="size-3" strokeWidth={1.75} />
                 <span className="max-w-40 truncate">{u.name}</span>
-                {u.state === "uploading" && <span className="font-mono text-[10px] text-foreground/40">…</span>}
-                <button onClick={() => setUploads((x) => x.filter((y) => y.key !== u.key))} aria-label={`Remove ${u.name}`} className="text-foreground/35 hover:text-foreground">
+                {u.state === "uploading" && <span className="font-mono text-[10px] text-foreground/60">…</span>}
+                {u.state === "done" && u.file?.index && u.file.index.status !== "ready" && (
+                  <span className="text-[10px] text-amber-500">not searchable</span>
+                )}
+                <button onClick={() => setUploads((x) => x.filter((y) => y.key !== u.key))} aria-label={`Remove ${u.name}`} className="text-foreground/55 hover:text-foreground">
                   <X className="size-3" strokeWidth={2} />
                 </button>
               </span>
@@ -662,18 +658,25 @@ function Composer({ dot, onSend, onStop, submitting = false, draft = null }: { d
           onChange={(e) => setText(e.target.value)}
           onPaste={(e) => { const pasted = [...e.clipboardData.files]; if (pasted.length) { e.preventDefault(); addFiles(pasted); } }}
           onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); submit(); } }}
-          placeholder={dragging ? "Drop files to attach" : "Message Lirava…"}
+          placeholder={dragging ? "Drop files to attach" : context ? "Ask about this matter…" : "Message Lirava…"}
           className="max-h-52 min-h-[44px] w-full resize-none border-0 bg-transparent px-1 py-2 text-[16px] leading-[1.5] tracking-default outline-none [field-sizing:content] placeholder:text-muted"
         />
 
         <div className="flex items-center gap-1 pb-1">
           <label
-            className="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-foreground/50 transition-colors hover:bg-black/[0.05] hover:text-foreground"
+            className="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-foreground/50 transition-colors hover:bg-highlight hover:text-foreground"
             title="Attach files"
           >
             <Plus className="size-[18px]" strokeWidth={1.75} />
             <input type="file" multiple className="hidden" onChange={(e) => { addFiles([...(e.target.files ?? [])]); e.target.value = ""; }} />
           </label>
+
+          {context && (
+            <span className="inline-flex h-7 max-w-[55%] items-center gap-1.5 rounded-md border border-border px-2 text-[12px] text-muted" title={`Answers use this matter: ${context}`}>
+              <Folder className="size-3 shrink-0" strokeWidth={1.75} />
+              <span className="truncate">{context}</span>
+            </span>
+          )}
 
           <div className="ml-auto flex items-center gap-1">
             {submitting && onStop ? (
@@ -695,8 +698,8 @@ function Composer({ dot, onSend, onStop, submitting = false, draft = null }: { d
           </div>
         </div>
       </div>
-      <p className="mt-2 text-center text-[12px] text-foreground/35">
-        Lirava can make mistakes. Check important info.
+      <p className="mt-2 text-center text-[12px] text-foreground/55">
+        Enter to send · Shift+Enter for a new line · Lirava can make mistakes. Check important info.
       </p>
     </div>
   );
@@ -710,7 +713,7 @@ function Attachments({ items, align = "start" }: { items: Attachment[]; align?: 
   return (
     <div className={`mt-2 flex flex-wrap gap-2 ${align === "end" ? "justify-end" : ""}`}>
       {images.map((a) => (
-        <a key={a.id} href={`/api/files/${a.id}`} target="_blank" rel="noreferrer" className="block overflow-hidden rounded-xl border border-black/[0.06] bg-card">
+        <a key={a.id} href={`/api/files/${a.id}`} target="_blank" rel="noreferrer" className="block overflow-hidden rounded-xl border border-border bg-card">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={`/api/files/${a.id}`} alt={a.name} className="max-h-64 max-w-[340px] object-contain" />
         </a>
@@ -721,14 +724,14 @@ function Attachments({ items, align = "start" }: { items: Attachment[]; align?: 
           href={`/api/files/${a.id}${a.mime === "application/pdf" ? "" : "?download=1"}`}
           target="_blank"
           rel="noreferrer"
-          className="surface flex items-center gap-2.5 px-3 py-2 transition-colors hover:border-black/15"
+          className="surface flex items-center gap-2.5 px-3 py-2 transition-colors hover:border-brand/40"
         >
-          <FileText className="size-4 shrink-0 text-foreground/45" strokeWidth={1.5} />
+          <FileText className="size-4 shrink-0 text-foreground/60" strokeWidth={1.5} />
           <span className="min-w-0">
             <span className="block max-w-56 truncate text-[13px]">{a.name}</span>
-            <span className="block text-[11px] text-foreground/45">{size(a.size)}</span>
+            <span className="block text-[11px] text-foreground/60">{size(a.size)}</span>
           </span>
-          <Download className="size-3.5 text-foreground/35" strokeWidth={1.75} />
+          <Download className="size-3.5 text-foreground/55" strokeWidth={1.75} />
         </a>
       ))}
     </div>
@@ -752,29 +755,65 @@ const ACTIVITY_ICON: [RegExp, typeof Globe][] = [
 ];
 
 // ── MessageRow ───────────────────────────────────────────────────────────────
-/** One chat line. In channels, `showName` labels which dot wrote it. */
+/** One chat line. In channels, `showName` labels which vakil wrote it. */
 export function MessageRow({
   m,
-  dot,
+  vakil,
   showName = false,
   isStreaming = false,
+  onOpenSource,
+  onRegenerate,
 }: {
   m: Message;
-  dot: Dot;
+  vakil: Vakil;
   showName?: boolean;
   isStreaming?: boolean;
+  onOpenSource?: (citation: Citation) => void;
+  onRegenerate?: () => void;
 }) {
   const artifacts = useStore((s) => s.artifacts);
 
   // Reasoning markup is presentation-only: keep the raw message in the store,
   // but do not let hidden content reach any user-facing assistant UI.
-  const visibleText = m.role === "dot" ? stripThinkingBlocks(m.text) : m.text;
+  const visibleText = m.role === "vakil" ? stripThinkingBlocks(m.text) : m.text;
 
   // Raw `TOOL <name> {json}` dumps arrive as plain text — pull them out and
   // render as quiet chips so the answer reads as prose, not a stack trace.
   const { prose, tools } = useMemo(
-    () => (m.role === "dot" && visibleText ? parseToolCalls(visibleText) : { prose: visibleText, tools: [] as ReturnType<typeof parseToolCalls>["tools"] }),
+    () => (m.role === "vakil" && visibleText ? parseToolCalls(visibleText) : { prose: visibleText, tools: [] as ReturnType<typeof parseToolCalls>["tools"] }),
     [m.role, visibleText],
+  );
+
+  // Answers cite with bracketed numbers like [1] or [2, 3]. When the message carries the matching sources,
+  // each number becomes a chip that opens that source beside the chat.
+  const citationMap = useMemo(() => new Map((m.citations ?? []).map((c) => [c.label, c] as const)), [m.citations]);
+  const citedProse = useMemo(() => {
+    if (!citationMap.size) return prose;
+    return prose.replace(/\[(\d+(?:\s*,\s*\d+)*)\]/g, (whole, list: string) => {
+      const numbers = list.split(",").map((s) => s.trim());
+      if (!numbers.some((n) => citationMap.has(n))) return whole;
+      return numbers.map((n) => (citationMap.has(n) ? `[${n}](cite:${n})` : `[${n}]`)).join("");
+    });
+  }, [prose, citationMap]);
+  const markdownComponents = useMemo<Components>(
+    () => ({
+      a: ({ href, children, title }) => {
+        if (href?.startsWith("cite:")) {
+          const n = href.slice(5);
+          const citation = citationMap.get(n);
+          const chip = "mx-0.5 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-[5px] border border-border px-1 align-[1px] font-mono text-[10px] font-medium leading-none text-brand-readable";
+          if (!citation || !onOpenSource) return <span className={chip}>{n}</span>;
+          const where = citation.kind === "document" ? `${citation.name}, ${citation.unit === "page" ? "page" : "section"} ${citation.page}` : citation.title;
+          return (
+            <button type="button" onClick={() => onOpenSource(citation)} title={where} aria-label={`Open source ${n}: ${where}`} className={`${chip} transition-colors hover:border-brand/60 hover:bg-highlight`}>
+              {n}
+            </button>
+          );
+        }
+        return <a href={href} title={title}>{children}</a>;
+      },
+    }),
+    [citationMap, onOpenSource],
   );
 
   // ── User bubble (right-aligned, pill shape, dark background) ────────────
@@ -783,8 +822,8 @@ export function MessageRow({
       <div className="flex justify-end animate-message-rise">
         <div className="flex max-w-[85%] flex-col items-end sm:max-w-[75%]">
           {m.from && (
-            <span className="mb-1 text-[11px] text-foreground/45">
-              {m.from.replace(/^dot:/, "From ").replace(/^routine:/, "Routine: ")}
+            <span className="mb-1 text-[11px] text-foreground/60">
+              {m.from.replace(/^vakil:/, "From ").replace(/^routine:/, "Routine: ")}
             </span>
           )}
           {m.text && (
@@ -803,11 +842,11 @@ export function MessageRow({
     const [label, ...rest] = m.text.split(" · ");
     const Icon = ACTIVITY_ICON.find(([re]) => re.test(label))?.[1] ?? Sparkles;
     return (
-      <div className="motion-line flex min-w-0 items-center gap-2 rounded-full bg-card/55 px-2.5 py-1 text-foreground/40">
+      <div className="motion-line flex min-w-0 items-center gap-2 rounded-full bg-card/55 px-2.5 py-1 text-foreground/60">
         <Icon className="size-3.5 shrink-0" strokeWidth={1.5} />
         {showName && <span className="shrink-0 text-[12px] text-foreground/55">Lirava</span>}
         <span className="shrink-0 text-[12px] font-medium whitespace-nowrap">{label}</span>
-        {rest.length > 0 && <span className="truncate text-[11px] text-foreground/40">{rest.join(": ")}</span>}
+        {rest.length > 0 && <span className="truncate text-[11px] text-foreground/60">{rest.join(": ")}</span>}
       </div>
     );
   }
@@ -816,17 +855,16 @@ export function MessageRow({
   if (m.role === "system") {
     return (
       <div className="flex items-center gap-3 py-2 animate-message-rise">
-        <span className="h-px flex-1 bg-black/[0.06]" />
-        <span className="text-[11px] text-foreground/40">{m.text}</span>
-        <span className="h-px flex-1 bg-black/[0.06]" />
+        <span className="h-px flex-1 bg-border" />
+        <span className="text-[11px] text-foreground/60">{m.text}</span>
+        <span className="h-px flex-1 bg-border" />
       </div>
     );
   }
 
   // ── Approval / question card ─────────────────────────────────────────────
-  if (m.role === "card" && m.card) return <CardRow m={m} />;
 
-  // ── Dot reply (left-aligned, no bubble — Claude style) ──────────────────
+  // ── Vakil reply (left-aligned, no bubble — Claude style) ──────────────────
   const matchedArtifactId =
     m.artifactId ||
     artifacts.find((a) =>
@@ -834,7 +872,7 @@ export function MessageRow({
     )?.id;
 
   const detectedDoc =
-    !matchedArtifactId && m.role === "dot" && visibleText ? detectLegalDocument(visibleText) : null;
+    !matchedArtifactId && m.role === "vakil" && visibleText ? detectLegalDocument(visibleText) : null;
 
   const artifactObj = matchedArtifactId ? artifacts.find((a) => a.id === matchedArtifactId) : null;
   const nonArtifactAttachments = m.attachments?.filter(
@@ -863,13 +901,13 @@ export function MessageRow({
               return (
                 <span
                   key={`${t.tool}-${i}`}
-                  className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-black/10 bg-popover px-2.5 py-1 text-[12px] text-foreground/60"
+                  className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-border bg-popover px-2.5 py-1 text-[12px] text-foreground/60"
                   title={t.detail ? `${t.label} — ${t.detail}` : t.label}
                 >
                   <Icon className="size-3.5 shrink-0 text-brand" strokeWidth={2} />
                   <span className="truncate">{t.label}</span>
                   {t.detail && (
-                    <span className="max-w-[16ch] truncate font-mono text-[11px] text-foreground/40">{t.detail}</span>
+                    <span className="max-w-[16ch] truncate font-mono text-[11px] text-foreground/60">{t.detail}</span>
                   )}
                 </span>
               );
@@ -879,7 +917,13 @@ export function MessageRow({
 
         {hasProse && (
           <div className="dot-prose">
-            <Markdown remarkPlugins={[remarkGfm]}>{prose}</Markdown>
+            <Markdown
+              remarkPlugins={[remarkGfm]}
+              components={markdownComponents}
+              urlTransform={(url) => (url.startsWith("cite:") ? url : defaultUrlTransform(url))}
+            >
+              {citedProse}
+            </Markdown>
             {isStreaming && (
               <span className="ml-1 inline-block h-3.5 w-1.5 rounded-xs bg-brand animate-pulse align-middle" />
             )}
@@ -897,19 +941,21 @@ export function MessageRow({
         {matchedArtifactId ? (
           <ArtifactCard artifactId={matchedArtifactId} />
         ) : detectedDoc ? (
-          <DetectedDocCard message={m} content={visibleText} dot={dot} detected={detectedDoc} />
+          <DetectedDocCard message={m} content={visibleText} vakil={vakil} detected={detectedDoc} />
         ) : null}
 
         {!!nonArtifactAttachments.length && <Attachments items={nonArtifactAttachments} />}
 
+        {!isStreaming && !!m.citations?.length && <SourceList citations={m.citations} onOpen={onOpenSource} />}
+
         {/* Message action icons below the document card (Claude style) */}
-        <MessageActions text={visibleText} />
+        <MessageActions text={visibleText} onRegenerate={onRegenerate} />
       </div>
     </div>
   );
 }
 
-function MessageActions({ text }: { text: string }) {
+function MessageActions({ text, onRegenerate }: { text: string; onRegenerate?: () => void }) {
   const [copied, setCopied] = useState(false);
   const [vote, setVote] = useState<"up" | "down" | null>(null);
 
@@ -922,7 +968,7 @@ function MessageActions({ text }: { text: string }) {
   };
 
   return (
-    <div className="mt-2.5 flex items-center gap-0.5 text-foreground/40 opacity-70 transition-opacity hover:opacity-100">
+    <div className="mt-2.5 flex items-center gap-0.5 text-foreground/60 opacity-70 transition-opacity hover:opacity-100">
       <button
         type="button"
         onClick={copyText}
@@ -935,7 +981,7 @@ function MessageActions({ text }: { text: string }) {
       <button
         type="button"
         onClick={() => setVote(vote === "up" ? null : "up")}
-        className={`btn-quiet size-7 p-0 rounded-md hover:text-foreground ${vote === "up" ? "text-foreground bg-black/[0.05]" : ""}`}
+        className={`btn-quiet size-7 p-0 rounded-md hover:text-foreground ${vote === "up" ? "text-foreground bg-highlight" : ""}`}
         title="Good response"
         aria-label="Good response"
       >
@@ -944,21 +990,23 @@ function MessageActions({ text }: { text: string }) {
       <button
         type="button"
         onClick={() => setVote(vote === "down" ? null : "down")}
-        className={`btn-quiet size-7 p-0 rounded-md hover:text-foreground ${vote === "down" ? "text-foreground bg-black/[0.05]" : ""}`}
+        className={`btn-quiet size-7 p-0 rounded-md hover:text-foreground ${vote === "down" ? "text-foreground bg-highlight" : ""}`}
         title="Bad response"
         aria-label="Bad response"
       >
         <ThumbsDown className="size-3.5" />
       </button>
-      <button
-        type="button"
-        onClick={() => {}}
-        className="btn-quiet size-7 p-0 rounded-md hover:text-foreground"
-        title="Regenerate"
-        aria-label="Regenerate response"
-      >
-        <RotateCcw className="size-3.5" />
-      </button>
+      {onRegenerate && (
+        <button
+          type="button"
+          onClick={onRegenerate}
+          className="btn-quiet size-7 p-0 rounded-md hover:text-foreground"
+          title="Ask again for a fresh answer"
+          aria-label="Regenerate response"
+        >
+          <RotateCcw className="size-3.5" />
+        </button>
+      )}
     </div>
   );
 }
@@ -966,12 +1014,12 @@ function MessageActions({ text }: { text: string }) {
 function DetectedDocCard({
   message,
   content,
-  dot,
+  vakil,
   detected,
 }: {
   message: Message;
   content: string;
-  dot: Dot;
+  vakil: Vakil;
   detected: { isLegalDoc: boolean; title: string; kind: string; content?: string };
 }) {
   const [loading, setLoading] = useState(false);
@@ -982,11 +1030,11 @@ function DetectedDocCard({
     const safeTitle = detected.title || "Legal Document";
     const localArtifact: DocumentArtifact = {
       id: artifactId,
-      dotId: dot.id,
+      vakilId: vakil.id,
       conversationId: message.conversationId || null,
       title: safeTitle,
       filename: `${safeTitle.toLowerCase().replace(/[^a-z0-9]+/g, "_").slice(0, 50)}.pdf`,
-      kind: (detected.kind as any) || "contract",
+      kind: (detected.kind as DocumentArtifact["kind"]) || "contract",
       content: detected.content || content,
       summary: `Legal Document: ${safeTitle}`,
       createdAt: message.createdAt || Date.now(),
@@ -1001,7 +1049,7 @@ function DetectedDocCard({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          dotId: dot.id,
+          vakilId: vakil.id,
           conversationId: message.conversationId,
           messageId: message.id,
           title: safeTitle,
@@ -1031,7 +1079,7 @@ function DetectedDocCard({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          dotId: dot.id,
+          vakilId: vakil.id,
           conversationId: message.conversationId,
           messageId: message.id,
           title: safeTitle,
@@ -1051,7 +1099,13 @@ function DetectedDocCard({
           a.click();
           a.remove();
         } else if (data.artifact?.id) {
-          window.location.href = `/api/artifacts/${data.artifact.id}/export?format=pdf`;
+          // No PDF could be made (for example the text is Hindi): the Word version carries it in full.
+          const a = document.createElement("a");
+          a.href = `/api/artifacts/${data.artifact.id}/export?format=docx`;
+          a.download = `${safeTitle.toLowerCase().replace(/[^a-z0-9]+/g, "_")}.docx`;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
         }
       }
     } catch (err) {
@@ -1069,7 +1123,7 @@ function DetectedDocCard({
       className="group my-3 flex items-center justify-between gap-3.5 rounded-xl border border-border bg-card p-3 transition-colors hover:border-brand/40 hover:bg-popover/80 sm:px-4 sm:py-3.5 cursor-pointer"
       title="Click to view document in Artifact Board"
     >
-      <div className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-black/[0.08] bg-black/[0.03] text-foreground/70 transition-colors group-hover:border-black/15 group-hover:bg-black/[0.05] group-hover:text-foreground">
+      <div className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-border bg-highlight text-foreground/70 transition-colors group-hover:border-brand/40 group-hover:bg-highlight group-hover:text-foreground">
         <Icon className="size-5" strokeWidth={1.5} />
       </div>
 
@@ -1098,117 +1152,8 @@ function DetectedDocCard({
   );
 }
 
-// ── CardRow ──────────────────────────────────────────────────────────────────
-function CardRow({ m }: { m: Message }) {
-  const card = m.card!;
-  const [answer, setAnswer] = useState("");
-  const [pending, start] = useTransition();
-  const open = card.status === "pending";
-  const act = (choice: "approve" | "deny" | "always" | "answer", value?: string) => start(() => resolveCard(m.id, choice, value));
-
-  if (!open) {
-    const tone = card.status === "approved" || card.status === "answered" ? "text-success" : card.status === "denied" ? "text-destructive" : "text-foreground/40";
-    const Icon = card.status === "denied" ? X : card.status === "expired" ? Clock : Check;
-    return (
-      <div className="ml-[40px] flex max-w-[520px] items-center gap-2.5 rounded-lg border border-black/[0.06] bg-card/60 px-3 py-2">
-        <Icon className={`size-3.5 shrink-0 ${tone}`} strokeWidth={2} />
-        <span className="truncate text-[13px] text-foreground/60">{card.title}</span>
-        <span className={`ml-auto shrink-0 text-[11px] font-medium ${tone}`}>
-          {card.status === "answered" ? `Answered: ${card.answer}` : card.kind === "connect" && card.status === "approved" ? "Connected" : card.status}
-        </span>
-      </div>
-    );
-  }
-
-  return (
-    <div className="ml-[40px] surface max-w-[520px] overflow-hidden shadow-elevated">
-      <div className="flex items-center gap-2 border-b border-black/[0.06] bg-popover px-4 py-2">
-        <span className="size-1.5 rounded-full bg-warning" />
-        <span className="eyebrow">{card.kind === "question" ? "Question for you" : card.kind === "connect" ? "Connect an app" : "Needs your approval"}</span>
-      </div>
-      <div className="p-4">
-        <div className="text-[15px] font-medium leading-snug">{card.title}</div>
-        {card.detail && <div className="mt-1.5 text-[13px] whitespace-pre-wrap text-foreground/60">{card.detail}</div>}
-
-        {card.kind === "connect" && <ConnectActions m={m} />}
-
-        {card.kind === "approval" && (
-          <div className="mt-4 flex flex-wrap items-center gap-2">
-            <button className="btn-primary h-8 px-3 text-[13px]" disabled={pending} onClick={() => act("approve")}>
-              Approve
-            </button>
-            <button className="btn-secondary h-8 px-3 text-[13px]" disabled={pending} onClick={() => act("deny")}>
-              Deny
-            </button>
-            {card.ruleAction && (
-              <button className="btn-quiet ml-auto" disabled={pending} onClick={() => act("always")} title={`Adds a rule: always allow when it wants to ${card.ruleAction}`}>
-                Always allow
-              </button>
-            )}
-          </div>
-        )}
-
-        {card.kind === "question" && (
-          <div className="mt-4 space-y-2.5">
-            {!!card.options?.length && (
-              <div className="flex flex-wrap gap-2">
-                {card.options.map((o) => (
-                  <button key={o} className="btn-secondary h-8 px-3 text-[13px]" disabled={pending} onClick={() => act("answer", o)}>
-                    {o}
-                  </button>
-                ))}
-              </div>
-            )}
-            <form className="flex gap-2" onSubmit={(e) => { e.preventDefault(); if (answer.trim()) act("answer", answer.trim()); }}>
-              <input className="field h-8" placeholder="Type your own answer" aria-label="Type your own answer" value={answer} onChange={(e) => setAnswer(e.target.value)} />
-              <button className="btn-primary h-8 px-3 text-[13px]" disabled={pending || !answer.trim()}>
-                Send
-              </button>
-            </form>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ── ConnectActions ────────────────────────────────────────────────────────────
-function ConnectActions({ m }: { m: Message }) {
-  const card = m.card!;
-  const [pending, start] = useTransition();
-  const [notYet, setNotYet] = useState(false);
-  return (
-    <div className="mt-4 flex flex-wrap items-center gap-2">
-      <a
-        className="btn-primary h-8 px-3 text-[13px] leading-8"
-        href={card.url ?? undefined}
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-disabled={!card.url}
-        onClick={(e) => { if (!card.url) e.preventDefault(); }}
-      >
-        <Plug className="size-3.5" strokeWidth={1.75} /> {card.title}
-        <ExternalLink className="size-3 opacity-60" strokeWidth={1.75} />
-      </a>
-      <button
-        className="btn-secondary h-8 px-3 text-[13px]"
-        disabled={pending}
-        onClick={() => start(async () => setNotYet(!(await confirmConnectCard(m.id))))}
-      >
-        I&apos;ve connected
-      </button>
-      <button className="btn-quiet" disabled={pending} onClick={() => start(() => resolveCard(m.id, "deny"))}>
-        Not now
-      </button>
-      {notYet && <span className="text-[11px] text-foreground/50">Not connected yet. Finish signing in, then try again.</span>}
-    </div>
-  );
-}
-
-// ── Dividers ─────────────────────────────────────────────────────────────────
-
 function DateSeparator({ ts }: { ts: number }) {
   const d = new Date(ts);
   const label = d.toLocaleString(undefined, { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
-  return <div className="py-4 text-center text-[11px] text-foreground/40">{label}</div>;
+  return <div className="py-4 text-center text-[11px] text-foreground/60">{label}</div>;
 }

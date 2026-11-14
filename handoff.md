@@ -1,6 +1,6 @@
 # Lirava project handoff
 
-> Update: The dark-teal Stitch direction is retired and must not be restored. The `.lirava-dark` implementation and simplified Stitch login were removed. Treat the current light/mineral foundation as the baseline until the replacement theme is specified.
+> Update: The dark-teal Stitch direction is retired and must not be restored. The `.lirava-dark` implementation and simplified Stitch login were removed. The current baseline is the dark graphite and coral foundation in `src/app/lirava-tokens.css`, documented in `docs/design-system.md`.
 
 ## What the user wants
 
@@ -22,7 +22,7 @@ This is an **in-progress implementation**, not a finished redesign. Continue by 
 
 ## Current visual baseline
 
-Use the existing light/mineral foundation documented in `docs/design-system.md` until the replacement color theme is approved.
+Use the existing dark graphite and coral foundation documented in `docs/design-system.md` until a replacement color theme is approved.
 
 Use readable interface typography, restrained editorial headings, modest borders and spacing, and minimal visual clutter. Prioritize the active conversation and citations. Keep matter chats nested beneath their matter, with general chats separate. Preserve chat actions including move, archive, delete, attachment, and stop streaming.
 
@@ -37,9 +37,9 @@ Do not inspect or implement the retired screens. Any future visual reference rem
 ## Current implementation
 
 - Shared base tokens are in `src/app/lirava-tokens.css`. A matching copy exists in `soli-admin/src/app/lirava-tokens.css` because the apps deploy independently. `tests/theme.test.ts` checks their parity when both are present.
-- `src/app/login/page.tsx`, `src/components/marketing/MarketingSite.tsx`, `src/components/Sidebar.tsx`, and `src/components/Chat.tsx` use the current light/base styling. Their existing content and behavior remain in progress for the replacement redesign.
+- `src/app/login/page.tsx`, `src/components/marketing/MarketingSite.tsx`, `src/components/Sidebar.tsx`, and `src/components/Chat.tsx` use the current graphite/coral base styling. Their existing content and behavior remain in progress for the replacement redesign.
 - `src/app/signup/page.tsx` uses the base shell; two unsupported pre-existing claims about training and SOC 2 were removed.
-- `docs/design-system.md` documents the current light/mineral foundation and should be updated when the replacement design system is chosen.
+- `docs/design-system.md` documents the current dark graphite/coral foundation and should be updated when the replacement design system is chosen.
 - `src/app/page.tsx` renders the marketing homepage for signed-out users and the workspace home for signed-in users. `/landing` also renders the marketing page; preserve this behavior.
 
 ## Verification so far

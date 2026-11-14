@@ -1,56 +1,16 @@
-import "server-only";
-
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { loginSchema, SESSION_COOKIE_NAME } from "@/lib/auth";
-import { loginBackend } from "@/lib/backend-client";
+import { BackendError, loginBackend } from "@/lib/backend-client";
 import { env } from "@/env";
 
-// In-memory rate limiter for demo (resets on server restart).
-// Tracks failed logins per IP; throttles after 20 rapid bad attempts.
-const failedLogins = new Map<string, { count: number; first: number }>();
-
-function trackFailedLogin(ip: string) {
-  const entry = failedLogins.get(ip) ?? { count: 0, first: Date.now() };
-  entry.count++;
-  if (entry.count === 1) entry.first = Date.now();
-  failedLogins.set(ip, entry);
-}
-
-function isRateLimited(ip: string): boolean {
-  const entry = failedLogins.get(ip);
-  if (!entry) return false;
-  return entry.count >= 20 && Date.now() - entry.first < 5 * 60 * 1000;
-}
-
-interface LoginRequestBody {
-  email?: unknown;
-  password?: unknown;
-}
-
 export async function POST(request: Request): Promise<NextResponse> {
-  /* eslint-disable @typescript-eslint/no-explicit-any */
-  const realIp =
-    (request as any).headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    (request as any).socket?.remoteAddress ||
-    "unknown-ip";
-  /* eslint-enable @typescript-eslint/no-explicit-any */
-
-  if (isRateLimited(realIp)) {
-    return NextResponse.json(
-      { error: "Too many login attempts. Please try again later." },
-      { status: 429 }
-    );
-  }
-
-  let body: LoginRequestBody;
+  let body: { email?: unknown; password?: unknown };
   try {
-    body = (await request.json()) as LoginRequestBody;
+    body = (await request.json()) as typeof body;
   } catch {
     return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 });
   }
-
-  trackFailedLogin(realIp);
 
   const parsed = loginSchema.safeParse({
     email: typeof body.email === "string" ? body.email.trim().toLowerCase() : body.email,
@@ -58,40 +18,36 @@ export async function POST(request: Request): Promise<NextResponse> {
   });
   if (!parsed.success) {
     return NextResponse.json(
-      {
-        error: "Invalid login details.",
-        issues: parsed.error.flatten().fieldErrors,
-      },
-      { status: 400 }
+      { error: "Invalid login details.", issues: parsed.error.flatten().fieldErrors },
+      { status: 400 },
     );
   }
 
   try {
-    // Authenticate via standalone soli-backend
-    const authRes = await loginBackend({
-      email: parsed.data.email,
-      password: parsed.data.password,
-    });
+    // The backend checks the credentials and applies the per-address and per-account limits.
+    // The visitor's address is passed along so the limits apply to them, not to this server.
+    const clientIp = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+    const authRes = await loginBackend(
+      { email: parsed.data.email, password: parsed.data.password },
+      clientIp ? { "x-forwarded-for": clientIp } : undefined,
+    );
 
-    failedLogins.delete(realIp);
-
-    // Set secure HTTP-only session cookie
     const store = await cookies();
     store.set(SESSION_COOKIE_NAME, authRes.token, {
       httpOnly: true,
       secure: env.NODE_ENV === "production",
       sameSite: "lax",
       path: "/",
-      maxAge: env.SESSION_MAX_AGE_SECONDS,
+      // Matches the session's real expiry, so the cookie never outlives the session.
+      expires: new Date(authRes.expiresAt),
     });
 
-    return NextResponse.json({
-      user: authRes.user,
-    });
-  } catch (err: any) {
-    return NextResponse.json(
-      { error: err.message || "Invalid email or password." },
-      { status: 401 }
-    );
+    return NextResponse.json({ user: authRes.user });
+  } catch (err) {
+    if (err instanceof BackendError && [400, 401, 403, 429].includes(err.status)) {
+      return NextResponse.json({ error: err.message }, { status: err.status });
+    }
+    console.error("[login] backend error:", err);
+    return NextResponse.json({ error: "Sign-in is unavailable right now. Please try again shortly." }, { status: 503 });
   }
 }

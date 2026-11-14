@@ -69,33 +69,41 @@ export function cleanDocumentContent(rawText: string): string {
   const headingChatterRegex =
     /^#{1,4}\s*(?:Key Legal Points|Key Points|Notes|Important Notes|Instructions for Filing|Next Steps|How to File)/i;
 
+  // A line that closes a real court paper: prayer, verification, place/date, advocate's signature block.
+  const endMarkerRegex =
+    /^(?:#+\s*|\*\*\s*)?(?:PRAYER|VERIFICATION|VERIFIED|PLACE\s*:|DATE\s*:|ADVOCATE\b|COUNSEL FOR|YOURS (?:FAITHFULLY|TRULY)|SIGNATURE)/i;
+  let lastEndMarker = -1;
+  docLines.forEach((line, index) => {
+    if (endMarkerRegex.test(line.trim())) lastEndMarker = index;
+  });
+
+  const looksLikeChatter = (index: number): boolean => {
+    const trimmed = docLines[index].trim();
+    if (!trimmed) return false;
+    if (headingChatterRegex.test(trimmed) || trailingChatterRegex.test(trimmed)) return true;
+    // A separator immediately followed by commentary
+    if (/^---+$/.test(trimmed) && index + 1 < docLines.length) {
+      const nextNonEmpty = docLines.slice(index + 1).find((l) => l.trim().length > 0);
+      return Boolean(
+        nextNonEmpty &&
+          (trailingChatterRegex.test(nextNonEmpty.trim()) ||
+            headingChatterRegex.test(nextNonEmpty.trim()) ||
+            /^\*This is a statutory notice.*Legal advice/i.test(nextNonEmpty.trim())),
+      );
+    }
+    return false;
+  };
+
+  // Only commentary that comes AFTER the document's real ending is trimmed. A "Notes" or "Key Points"
+  // heading in the middle of a petition is part of the petition and must stay. With no recognisable
+  // ending, only the last 40% of the text is considered.
   let endIndex = docLines.length;
   for (let i = 0; i < docLines.length; i++) {
-    const trimmed = docLines[i].trim();
-    if (!trimmed) continue;
-
-    if (headingChatterRegex.test(trimmed)) {
+    if (!looksLikeChatter(i)) continue;
+    const afterRealEnding = lastEndMarker === -1 ? i >= docLines.length * 0.6 : i > lastEndMarker;
+    if (afterRealEnding) {
       endIndex = i;
       break;
-    }
-
-    if (trailingChatterRegex.test(trimmed)) {
-      endIndex = i;
-      break;
-    }
-
-    // Check for separator followed immediately by commentary
-    if (/^---+$/.test(trimmed) && i + 1 < docLines.length) {
-      const nextNonEmpty = docLines.slice(i + 1).find((l) => l.trim().length > 0);
-      if (
-        nextNonEmpty &&
-        (trailingChatterRegex.test(nextNonEmpty.trim()) ||
-          headingChatterRegex.test(nextNonEmpty.trim()) ||
-          /^\*This is a statutory notice.*Legal advice/i.test(nextNonEmpty.trim()))
-      ) {
-        endIndex = i;
-        break;
-      }
     }
   }
 
@@ -115,6 +123,27 @@ export function cleanDocumentContent(rawText: string): string {
   return cleaned;
 }
 
+/** Words a document's opening heading (court caption, notice, agreement...) is made of. */
+const DOCUMENT_HEADING =
+  /^(?:IN THE (?:COURT|HIGH COURT|SUPREME COURT|MATTER)|BEFORE THE|CRIMINAL MISCELLANEOUS|COMMERCIAL SUIT|BAIL APPLICATION|APPLICATION (?:FOR|UNDER)|PETITION (?:FOR|UNDER)|MEMORANDUM OF|STATUTORY|DEMAND NOTICE|LEGAL (?:DEMAND )?NOTICE|NOTICE UNDER|AFFIDAVIT|AGREEMENT|[A-Z ]+ AGREEMENT|CONTRACT|POWER OF ATTORNEY|DEED OF|SALE DEED|LEASE DEED|RENT AGREEMENT|NON-DISCLOSURE)/;
+
+/**
+ * True when the reply starts like a document: after at most a short lead-in sentence, one of its first lines
+ * is a heading written in capitals. Matching is case-sensitive on purpose, so "petition under" in a sentence
+ * does not count.
+ */
+export function opensLikeDocument(text: string): boolean {
+  const lines = text
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter(Boolean)
+    .slice(0, 6);
+  return lines.some((line) => {
+    const plain = line.replace(/^[#>*_\s-]+|[*_\s]+$/g, "");
+    return DOCUMENT_HEADING.test(plain) && plain === plain.toUpperCase();
+  });
+}
+
 /**
  * Detects if a text block contains a formal court petition, statutory notice,
  * contract, or structured document.
@@ -122,6 +151,9 @@ export function cleanDocumentContent(rawText: string): string {
  */
 export function detectLegalDocument(text: string): DetectedDocument | null {
   if (!text || text.length < 250) return null;
+  // An ordinary answer that merely talks about petitions or agreements ("I can draft petitions under ...")
+  // is not a document. A real court paper or agreement opens with its own heading in capitals.
+  if (!opensLikeDocument(text)) return null;
 
   const hasCourt = /IN THE COURT OF|BEFORE THE HON'BLE|BEFORE THE COURT|DISTRICT AND SESSIONS/i.test(text);
   const hasPetition = /APPLICATION (FOR|UNDER)|PETITION (FOR|UNDER)|MEMORANDUM OF|NOTICE UNDER SECTION|DEMAND NOTICE|STATUTORY NOTICE/i.test(text);

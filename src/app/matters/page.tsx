@@ -5,7 +5,6 @@ import Link from "next/link";
 import {
   BriefcaseBusiness,
   CalendarDays,
-  FileText,
   MessageSquare,
   Plus,
   Search,
@@ -29,12 +28,27 @@ export default function MattersPage() {
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<(typeof statuses)[number]>("All");
   const [showForm, setShowForm] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
   const conversations = useStore((state) => state.conversations);
 
   useEffect(() => {
-    void listMatters()
-      .then(setMatters)
-      .catch(() => setMatters([]));
+    let active = true;
+    listMatters()
+      .then((list) => {
+        if (active) setMatters(list);
+      })
+      .catch(() => {
+        if (active) setLoadError("We could not load your matters. Please refresh the page.");
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
   }, []);
 
   const visibleMatters = useMemo(() => {
@@ -51,17 +65,27 @@ export default function MattersPage() {
 
   async function createMatter(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const form = new FormData(event.currentTarget);
-    const matter = await createMatterAction({
-      title: String(form.get("title") || "Untitled matter").trim(),
-      client: String(form.get("client") || "").trim(),
-      court: String(form.get("court") || "").trim(),
-      nextDate: String(form.get("nextDate") || "").trim(),
-      notes: String(form.get("notes") || "").trim(),
-    });
-    setMatters((current) => [matter, ...current]);
-    setShowForm(false);
-    event.currentTarget.reset();
+    // React clears event.currentTarget once this handler awaits, so keep the form itself.
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
+    setSaving(true);
+    setFormError(null);
+    try {
+      const matter = await createMatterAction({
+        title: String(form.get("title") || "Untitled matter").trim(),
+        client: String(form.get("client") || "").trim(),
+        court: String(form.get("court") || "").trim(),
+        nextDate: String(form.get("nextDate") || "").trim(),
+        notes: String(form.get("notes") || "").trim(),
+      });
+      setMatters((current) => [matter, ...current]);
+      setShowForm(false);
+      formElement.reset();
+    } catch {
+      setFormError("We could not create the matter. Please try again.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   const count = (value: MatterStatus) =>
@@ -128,7 +152,15 @@ export default function MattersPage() {
         </div>
       </div>
 
-      {visibleMatters.length === 0 ? (
+      {loadError ? (
+        <p role="alert" className="surface mt-8 p-6 text-[14px] text-red-300">
+          {loadError}
+        </p>
+      ) : loading ? (
+        <p role="status" className="mt-8 text-[14px] text-foreground/55">
+          Loading your matters…
+        </p>
+      ) : visibleMatters.length === 0 ? (
         <div className="surface mt-8 flex min-h-72 flex-col items-center justify-center px-6 text-center">
           <span className="grid size-12 place-items-center rounded-2xl bg-brand/10 text-brand">
             <BriefcaseBusiness className="size-6" />
@@ -199,10 +231,6 @@ export default function MattersPage() {
                 <span className="inline-flex items-center gap-1.5 text-brand">
                   <MessageSquare className="size-3.5" />
                   Open workspace
-                </span>
-                <span className="inline-flex items-center gap-1.5">
-                  <FileText className="size-3.5" />
-                  Documents
                 </span>
               </div>
             </Link>
@@ -276,6 +304,11 @@ export default function MattersPage() {
                 />
               </label>
             </div>
+            {formError && (
+              <p role="alert" className="mt-4 text-[13px] text-red-300">
+                {formError}
+              </p>
+            )}
             <div className="mt-6 flex justify-end gap-2">
               <button
                 type="button"
@@ -286,9 +319,10 @@ export default function MattersPage() {
               </button>
               <button
                 type="submit"
-                className="btn-primary h-9 px-4 text-[13px]"
+                disabled={saving}
+                className="btn-primary h-9 px-4 text-[13px] disabled:opacity-60"
               >
-                Create matter
+                {saving ? "Creating…" : "Create matter"}
               </button>
             </div>
           </form>

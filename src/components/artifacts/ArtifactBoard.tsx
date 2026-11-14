@@ -11,7 +11,7 @@ import {
   ChevronDown,
   Columns2,
 } from "lucide-react";
-import { addArtifactLocally, setActiveArtifact, useStore } from "@/lib/store";
+import { addArtifactLocally, setActiveArtifact, setBoardWidthPreference, useStore } from "@/lib/store";
 import { DocumentPreview } from "./DocumentPreview";
 
 export function ArtifactBoard({
@@ -33,19 +33,11 @@ export function ArtifactBoard({
   const [showDropdown, setShowDropdown] = useState(false);
   const [loadingActive, setLoadingActive] = useState(false);
 
-  // Resizable width state with localStorage persistence (fallback when standalone)
-  const [internalWidth, setInternalWidth] = useState<number>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("soli_artifact_board_width");
-      if (saved) {
-        const parsed = parseInt(saved, 10);
-        if (!isNaN(parsed) && parsed >= 280 && parsed <= 2400) {
-          return parsed;
-        }
-      }
-    }
-    return 640;
-  });
+  // Resizable width. The saved width comes from PostgreSQL (through the store); while dragging, the live width is kept here.
+  const savedWidth = useStore((s) => s.boardWidth);
+  const [dragWidth, setDragWidth] = useState<number | null>(null);
+  const internalWidth = dragWidth ?? savedWidth ?? 640;
+  const setInternalWidth = (width: number) => setDragWidth(width);
   const [internalDragging, setInternalDragging] = useState(false);
   const [isDesktop, setIsDesktop] = useState(false);
 
@@ -62,6 +54,8 @@ export function ArtifactBoard({
   // Fetch active artifact if activeId is set but not yet loaded into client store
   useEffect(() => {
     if (activeId && !artifacts.some((a) => a.id === activeId)) {
+      // The loading flag has to be on before the request starts, so it is set here deliberately.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLoadingActive(true);
       fetch(`/api/artifacts/${encodeURIComponent(activeId)}`)
         .then((res) => (res.ok ? res.json() : null))
@@ -112,9 +106,8 @@ export function ArtifactBoard({
 
       const deltaX = startX - ev.clientX;
       const finalWidth = Math.min(maxWidth, Math.max(minWidth, startWidth + deltaX));
-      try {
-        localStorage.setItem("soli_artifact_board_width", String(Math.round(finalWidth)));
-      } catch {}
+      setBoardWidthPreference(Math.round(finalWidth));
+      setDragWidth(null);
     };
 
     window.addEventListener("pointermove", onPointerMove);
@@ -127,10 +120,8 @@ export function ArtifactBoard({
       onResetWidth();
     } else {
       const defaultWidth = Math.round(window.innerWidth * 0.5);
-      setInternalWidth(defaultWidth);
-      try {
-        localStorage.setItem("soli_artifact_board_width", String(defaultWidth));
-      } catch {}
+      setDragWidth(null);
+      setBoardWidthPreference(defaultWidth);
     }
   };
 

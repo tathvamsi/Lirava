@@ -6,15 +6,8 @@ import {
   signupSchema,
   SESSION_COOKIE_NAME,
 } from "@/lib/auth";
-import { registerBackend } from "@/lib/backend-client";
+import { BackendError, registerBackend } from "@/lib/backend-client";
 import { env } from "@/env";
-
-interface SignupRequestBody {
-  name?: unknown;
-  email?: unknown;
-  password?: unknown;
-  inviteCode?: unknown;
-}
 
 /** Public signup requirements (drives the invite-code field on the form). */
 export async function GET(): Promise<NextResponse> {
@@ -22,9 +15,9 @@ export async function GET(): Promise<NextResponse> {
 }
 
 export async function POST(request: Request): Promise<NextResponse> {
-  let body: SignupRequestBody;
+  let body: { name?: unknown; email?: unknown; password?: unknown; inviteCode?: unknown };
   try {
-    body = (await request.json()) as SignupRequestBody;
+    body = (await request.json()) as typeof body;
   } catch {
     return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 });
   }
@@ -37,47 +30,41 @@ export async function POST(request: Request): Promise<NextResponse> {
   });
   if (!parsed.success) {
     return NextResponse.json(
-      {
-        error: "Invalid signup details.",
-        issues: parsed.error.flatten().fieldErrors,
-      },
-      { status: 400 }
+      { error: "Invalid signup details.", issues: parsed.error.flatten().fieldErrors },
+      { status: 400 },
     );
   }
 
   const { name, email, password, inviteCode } = parsed.data;
 
-  // Gate first: verify invite code policy
+  // Quick check here for a friendly message; the backend enforces the same rules and is the authority.
   const gateError = checkSignupAccess(email, inviteCode);
   if (gateError) {
     return NextResponse.json({ error: gateError }, { status: 403 });
   }
 
   try {
-    // Register user via standalone soli-backend
-    const authRes = await registerBackend({
-      name,
-      email,
-      password,
-      inviteCode,
-    });
+    const clientIp = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+    const authRes = await registerBackend(
+      { name, email, password, inviteCode },
+      clientIp ? { "x-forwarded-for": clientIp } : undefined,
+    );
 
-    // Set secure HTTP-only session cookie
     const store = await cookies();
     store.set(SESSION_COOKIE_NAME, authRes.token, {
       httpOnly: true,
       secure: env.NODE_ENV === "production",
       sameSite: "lax",
       path: "/",
-      maxAge: env.SESSION_MAX_AGE_SECONDS,
+      expires: new Date(authRes.expiresAt),
     });
 
     return NextResponse.json({ user: authRes.user }, { status: 201 });
-  } catch (err: any) {
-    const status = err.message.includes("already exists") ? 409 : 400;
-    return NextResponse.json(
-      { error: err.message || "Failed to create account." },
-      { status }
-    );
+  } catch (err) {
+    if (err instanceof BackendError && [400, 403, 409, 429].includes(err.status)) {
+      return NextResponse.json({ error: err.message }, { status: err.status });
+    }
+    console.error("[register] backend error:", err);
+    return NextResponse.json({ error: "Sign-up is unavailable right now. Please try again shortly." }, { status: 503 });
   }
 }

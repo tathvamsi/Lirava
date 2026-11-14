@@ -1,20 +1,20 @@
-import type { Dot } from "./types";
+import type { Vakil } from "./types";
 
-export function statusLine(dot: Dot): string {
-  if (dot.status === "paused") return "Paused";
-  if (dot.status === "waiting") return "Waiting for you";
-  if (dot.status === "working") return dot.activity ?? "Working";
-  return dot.purpose || "Ready";
+export function statusLine(vakil: Vakil): string {
+  if (vakil.status === "paused") return "Paused";
+  if (vakil.status === "waiting") return "Waiting for you";
+  if (vakil.status === "working") return vakil.activity ?? "Working";
+  return vakil.purpose || "Ready";
 }
 
 /** Short uppercase status for mono chrome. */
-export function statusLabel(dot: Dot): string {
-  return { idle: "Ready", working: "Working", waiting: "Needs you", paused: "Paused" }[dot.status];
+export function statusLabel(vakil: Vakil): string {
+  return { idle: "Ready", working: "Working", waiting: "Needs you", paused: "Paused" }[vakil.status];
 }
 
-/** Tailwind classes for the small status dot. */
-export function statusDot(dot: Dot): string {
-  switch (dot.status) {
+/** Tailwind classes for the small status vakil. */
+export function statusDot(vakil: Vakil): string {
+  switch (vakil.status) {
     case "working":
       return "bg-brand text-brand live-dot";
     case "waiting":

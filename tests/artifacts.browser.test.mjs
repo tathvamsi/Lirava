@@ -12,7 +12,7 @@ import { SignJWT } from "jose";
 // Both authentication and document data use a local fixture backend; no real accounts are touched.
 test("artifact library: search, filters, preview, downloads, recovery and mobile", { timeout: 240000 }, async () => {
   const secret = "artifact-browser-test-secret-not-used-outside-this-test";
-  const base = { dotId: "dot_fixture", conversationId: "chat_fixture", filename: "document.md", createdAt: 1770000000000, updatedAt: 1770000000000, pdfFileId: null, docxFileId: null };
+  const base = { vakilId: "dot_fixture", conversationId: "chat_fixture", filename: "document.md", createdAt: 1770000000000, updatedAt: 1770000000000, pdfFileId: null, docxFileId: null };
   const documents = [
     { ...base, id: "research", title: "Service of notice — research note", kind: "markdown", summary: "Dispatch records, acknowledgements, and gaps to verify before drafting.", content: "# Research note\n\nReview the dispatch receipt and returned envelope.\n\n## Documents to verify\n\n- Notice and proof of dispatch\n- Address stated in the agreement\n- Returned postal cover\n\nThe available record is incomplete. Confirm service against the original documents.", updatedAt: 1772000000000 },
     { ...base, id: "pleading", title: "Application for interim relief", kind: "legal_paper", summary: "Working draft with facts, grounds, and the relief sought.", content: "# Application for interim relief\n\n## Facts\n\nThe applicant seeks interim relief pending disposal of the matter.\n\n## Grounds\n\nInsert the verified facts and supporting authorities before filing.", pdfFileId: "pdf_fixture" },
@@ -33,7 +33,7 @@ test("artifact library: search, filters, preview, downloads, recovery and mobile
     }
     if (url.pathname === "/api/events") {
       res.setHeader("Content-Type", "text/event-stream");
-      res.write(`data: ${JSON.stringify({ type: "snapshot", data: { dots: [], conversations: [], messages: [], artifacts: [], routines: [], triggers: [], rules: [], memories: [], skills: [], passwords: [], channels: [], apps: [], computer: {} } })}\n\n`);
+      res.write(`data: ${JSON.stringify({ type: "snapshot", data: { vakils: [], conversations: [], messages: [], artifacts: [], routines: [], triggers: [], rules: [], memories: [], skills: [], passwords: [], channels: [], apps: [], computer: {} } })}\n\n`);
       return;
     }
     if (url.pathname === "/api/matters") return res.end('{"matters":[]}');

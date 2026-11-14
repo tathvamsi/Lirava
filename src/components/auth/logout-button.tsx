@@ -19,7 +19,7 @@ export function LogoutButton({
     } catch {
       // Cookie cleanup is best-effort; still navigate to the login page.
     } finally {
-      // Wipe cached dots/chats/configs first, then hard-navigate: the next
+      // Wipe cached vakils/chats/configs first, then hard-navigate: the next
       // account must never see the previous user's data.
       resetStore();
       // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- full reload required; router.push can keep stale caches

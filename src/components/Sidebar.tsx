@@ -4,17 +4,17 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, useTransition, type ReactNode } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Archive, ArchiveRestore, Boxes, ChevronDown, ChevronRight, ChevronsUpDown, Ellipsis, FolderKanban, Globe, Keyboard, LayoutGrid, LogOut, Palette, PanelLeftClose, Pencil, Pin, PinOff, Search, Settings, ShieldCheck, SquarePen, Trash2, Upload, X } from "lucide-react";
-import { backfillConversationTitles, deleteConversation, listMatters, moveConversationToMatter, renameConversation } from "@/app/actions";
+import { backfillConversationTitles, setConversationFlags, deleteConversation, listMatters, moveConversationToMatter, renameConversation } from "@/app/actions";
 import { LogoutButton } from "@/components/auth/logout-button";
-import { deleteConversationLocally, markRead, renameConversationLocally, updateConversationMatterLocally, useStore } from "@/lib/store";
+import { deleteConversationLocally, getState, markRead, renameConversationLocally, updateConversationFlagsLocally, updateConversationMatterLocally, useStore } from "@/lib/store";
 import { setSidebarCollapsed, setSidebarOpen, toggleSidebar, useSidebarCollapsed, useSidebarOpen } from "@/lib/ui";
 import { timeAgo } from "@/lib/status";
 import { stripThinkingBlocks } from "@/lib/strip-thinking";
 import type { Conversation, Matter, Message } from "@/lib/types";
 import { LiravaLogo } from "@/components/brand/LiravaLogo";
 
-export function Wordmark() {
-  return <LiravaLogo />;
+export function Wordmark({ className = "" }: { className?: string }) {
+  return <LiravaLogo className={className} />;
 }
 
 /** Last readable line of a conversation, for the preview under its title. */
@@ -23,7 +23,7 @@ function preview(messages: Message[], convId: string): string {
     const m = messages[i];
     if (m.conversationId !== convId) continue;
     if (m.role === "card" && m.card?.status === "pending") return `Needs you: ${m.card.title}`;
-    if (m.role === "dot") {
+    if (m.role === "vakil") {
       const text = stripThinkingBlocks(m.text).trim();
       if (text) return text.replace(/[#*_`>|[\]]/g, "").replace(/\s+/g, " ");
       continue;
@@ -37,7 +37,7 @@ export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const activeConv = useSearchParams().get("c");
-  const dots = useStore((s) => s.dots);
+  const vakils = useStore((s) => s.vakils);
   const messages = useStore((s) => s.messages);
   const lastRead = useStore((s) => s.lastRead);
   const conversations = useStore((s) => s.conversations);
@@ -62,20 +62,58 @@ export default function Sidebar() {
   const menuRef = useRef<HTMLDivElement | null>(null);
   const profileRef = useRef<HTMLDivElement | null>(null);
 
+  // Pinned and archived are properties of the chat itself, stored in PostgreSQL.
+  const pinnedIds = useMemo(() => conversations.filter((c) => c.pinned).map((c) => c.id), [conversations]);
+  const archivedIds = useMemo(() => conversations.filter((c) => c.archived).map((c) => c.id), [conversations]);
+
   useEffect(() => {
     let active = true;
-    fetch("/api/auth/me").then((response) => response.ok ? response.json() : null).then((data: { user?: { name: string; email: string; role: string } } | null) => { if (active && data?.user) setUser(data.user); }).catch(() => undefined);
+    fetch("/api/auth/me")
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data: { user?: { id?: string; name: string; email: string; role: string } } | null) => {
+        if (!active || !data?.user) return;
+        setUser(data.user);
+      })
+      .catch(() => undefined);
     return () => { active = false; };
   }, []);
 
+  // Once the workspace has loaded: move pins/archives this browser kept in the past onto the chats themselves
+  // (only chats that belong to the signed-in person can match), and give chats that still carry a placeholder
+  // title a name taken from their first question.
+  const housekeeping = useRef(false);
   useEffect(() => {
-    const migrationKey = "soli:conversation-title-backfill-v1";
-    if (localStorage.getItem(migrationKey)) return;
-    void backfillConversationTitles().then((renamed) => {
-      renamed.forEach(({ id, title }) => renameConversationLocally(id, title));
-      localStorage.setItem(migrationKey, "done");
-    }).catch(() => undefined);
-  }, []);
+    if (!loaded || housekeeping.current) return;
+    housekeeping.current = true;
+    const mine = getState().conversations;
+    try {
+      for (const [key, flag] of [["soli:pinned", "pinned"], ["soli:archived", "archived"]] as const) {
+        const raw = localStorage.getItem(key);
+        if (raw === null) continue;
+        const ids: unknown = JSON.parse(raw);
+        for (const id of Array.isArray(ids) ? ids : []) {
+          if (typeof id === "string" && mine.some((c) => c.id === id && !c[flag])) {
+            updateConversationFlagsLocally(id, { [flag]: true });
+            void setConversationFlags(id, { [flag]: true }).catch(() => undefined);
+          }
+        }
+        localStorage.removeItem(key);
+      }
+      localStorage.removeItem("soli:conversation-title-backfill-v1");
+      localStorage.removeItem("soli:owner");
+      localStorage.removeItem("vakils.lastRead");
+      localStorage.removeItem("dots.lastRead");
+      localStorage.removeItem("soli_artifact_board_width");
+    } catch {
+      /* storage unavailable: nothing to move */
+    }
+    const placeholder = new Set(["", "New matter chat", "New consultation", "New Legal Consultation", "Untitled Conversation"]);
+    if (mine.some((c) => placeholder.has(c.title))) {
+      void backfillConversationTitles()
+        .then((renamed) => renamed.forEach(({ id, title }) => renameConversationLocally(id, title)))
+        .catch(() => undefined);
+    }
+  }, [loaded]);
 
   useEffect(() => {
     let active = true;
@@ -87,25 +125,9 @@ export default function Sidebar() {
     return () => { active = false; };
   }, []);
 
-  const readIds = (key: string): string[] => {
-    try {
-      const raw = localStorage.getItem(key);
-      const arr: unknown = raw ? JSON.parse(raw) : [];
-      return Array.isArray(arr) ? arr.filter((x): x is string => typeof x === "string") : [];
-    } catch {
-      return [];
-    }
-  };
-  const [pinnedIds, setPinnedIds] = useState<string[]>(() => readIds("soli:pinned"));
-  const [archivedIds, setArchivedIds] = useState<string[]>(() => readIds("soli:archived"));
-  const toggleId = (ids: string[], key: string, id: string, set: (v: string[]) => void) => {
-    const next = ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id];
-    set(next);
-    try {
-      localStorage.setItem(key, JSON.stringify(next));
-    } catch {
-      /* private mode — in-memory only */
-    }
+  const toggleFlag = (id: string, flag: "pinned" | "archived", on: boolean) => {
+    updateConversationFlagsLocally(id, { [flag]: on });
+    void setConversationFlags(id, { [flag]: on }).catch(() => updateConversationFlagsLocally(id, { [flag]: !on }));
   };
 
   // Close the menu on outside click / Escape.
@@ -149,11 +171,11 @@ export default function Sidebar() {
   }, [profileOpen]);
 
 
-  const dotHref = (dotId: string, convId?: string): string => {
-    const canonicalId = dotId.startsWith("dot_") ? dotId.replace(/^dot_/, "vakil_") : dotId;
+  const vakilHref = (vakilId: string, convId?: string): string => {
+    const canonicalId = vakilId;
     return convId ? `/vakil/${canonicalId}?c=${convId}` : `/vakil/${canonicalId}`;
   };
-  const newChatHref = dots[0] ? dotHref(dots[0].id, "new") : "/";
+  const newChatHref = vakils[0] ? vakilHref(vakils[0].id, "new") : "/";
   const drawerOpen = useSidebarOpen();
   const collapsed = useSidebarCollapsed();
 
@@ -173,7 +195,7 @@ export default function Sidebar() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
 
-  const dotById = useMemo(() => new Map(dots.map((d) => [d.id, d])), [dots]);
+  const dotById = useMemo(() => new Map(vakils.map((d) => [d.id, d])), [vakils]);
 
   // General chat history only: matter chats live exclusively under their matter.
   // Archived chats are hidden unless "Archived" is expanded.
@@ -190,7 +212,7 @@ export default function Sidebar() {
     const hits = new Set(
       messages
         .filter((m) => {
-          const text = m.role === "dot" ? stripThinkingBlocks(m.text) : m.text;
+          const text = m.role === "vakil" ? stripThinkingBlocks(m.text) : m.text;
           return m.conversationId && text.toLowerCase().includes(query);
         })
         .map((m) => m.conversationId),
@@ -200,8 +222,8 @@ export default function Sidebar() {
   const archivedCount = useMemo(() => conversations.filter((c) => !c.matterId && archivedIds.includes(c.id)).length, [conversations, archivedIds]);
 
   const unread = (c: Conversation) => {
-    const since = lastRead[c.dotId];
-    return since !== undefined && c.updatedAt > since && messages.some((m) => m.conversationId === c.id && m.role === "dot" && m.createdAt > since);
+    const since = lastRead[c.vakilId];
+    return since !== undefined && c.updatedAt > since && messages.some((m) => m.conversationId === c.id && m.role === "vakil" && m.createdAt > since);
   };
 
   const remove = (c: Conversation) =>
@@ -210,7 +232,7 @@ export default function Sidebar() {
       deleteConversationLocally(c.id);
       setConfirming(null);
       setMenuOpenId(null);
-      if (c.id === activeConv) router.push(dotHref(c.dotId));
+      if (c.id === activeConv) router.push(vakilHref(c.vakilId));
       try {
         await deleteConversation(c.id);
       } catch {
@@ -244,7 +266,7 @@ export default function Sidebar() {
     });
 
   const share = async (c: Conversation) => {
-    const url = `${window.location.origin}${dotHref(c.dotId, c.id)}`;
+    const url = `${window.location.origin}${vakilHref(c.vakilId, c.id)}`;
     try {
       await navigator.clipboard.writeText(url);
     } catch {
@@ -288,9 +310,7 @@ export default function Sidebar() {
         <div className="flex h-full w-[280px] min-w-[280px] max-w-[280px] shrink-0 flex-col">
           {/* Header */}
           <div className="flex h-14 shrink-0 items-center gap-1 px-3">
-            <Link href="/" className="mr-auto pl-1">
-              <Wordmark />
-            </Link>
+            <Wordmark className="mr-auto pl-1" />
             <button
               type="button"
               className={`flex size-8 items-center justify-center text-foreground/60 transition-colors hover:text-foreground ${searching ? "text-foreground" : ""}`}
@@ -382,7 +402,7 @@ export default function Sidebar() {
                       <span className="pr-2 text-[10px] text-foreground/35">{matterChats.length || ""}</span>
                     </div>
                     {expanded && matterChats.length > 0 && <div className="ml-3 border-l border-border pl-3">
-                      {matterChats.map((chat) => <Link key={chat.id} href={`${dotHref(chat.dotId, chat.id)}&matter=${encodeURIComponent(matter.id)}`} onClick={() => markRead(chat.dotId)} className={`block truncate rounded-md px-2 py-1.5 text-[13px] ${chat.id === activeConv ? "bg-card text-foreground" : "text-foreground/60 hover:bg-highlight hover:text-foreground"}`} title={chat.title}>
+                      {matterChats.map((chat) => <Link key={chat.id} href={`${vakilHref(chat.vakilId, chat.id)}&matter=${encodeURIComponent(matter.id)}`} onClick={() => markRead(chat.vakilId)} className={`block truncate rounded-md px-2 py-1.5 text-[13px] ${chat.id === activeConv ? "bg-card text-foreground" : "text-foreground/60 hover:bg-highlight hover:text-foreground"}`} title={chat.title}>
                         <span className="mr-2 text-foreground/35">◦</span>{chat.title || "Untitled chat"}
                       </Link>)}
                     </div>}
@@ -398,7 +418,7 @@ export default function Sidebar() {
           <nav className="min-h-0 flex-1 overflow-y-auto px-2 pb-2">
             {!loaded && <div className="px-2 py-2 text-body-sm text-foreground/45">Connecting…</div>}
             {recent.map((c, index) => {
-              const d = dotById.get(c.dotId);
+              const d = dotById.get(c.vakilId);
               if (!d) return null;
               if (confirming === c.id) {
                 return (
@@ -430,7 +450,7 @@ export default function Sidebar() {
                       : "hover:bg-highlight"
                   }`}
                 >
-                  <Link href={dotHref(d.id, c.id)} onClick={() => markRead(d.id)} className="flex min-w-0 flex-1 items-center gap-3 px-2.5 py-2">
+                  <Link href={vakilHref(d.id, c.id)} onClick={() => markRead(d.id)} className="flex min-w-0 flex-1 items-center gap-3 px-2.5 py-2">
                     <span className="min-w-0 flex-1">
                       <span className="flex items-baseline gap-2">
                         {renaming ? (
@@ -492,7 +512,7 @@ export default function Sidebar() {
                       <MenuItem
                         icon={pinned ? <PinOff className="size-4" strokeWidth={1.75} /> : <Pin className="size-4" strokeWidth={1.75} />}
                         label={pinned ? "Unpin" : "Pin"}
-                        onClick={() => (toggleId(pinnedIds, "soli:pinned", c.id, setPinnedIds), setMenuOpenId(null))}
+                        onClick={() => (toggleFlag(c.id, "pinned", !pinned), setMenuOpenId(null))}
                       />
                       <div className="mx-3 my-1.5 h-px bg-highlight" />
                       <MenuItem
@@ -508,7 +528,7 @@ export default function Sidebar() {
                       <MenuItem
                         icon={archived ? <ArchiveRestore className="size-4" strokeWidth={1.75} /> : <Archive className="size-4" strokeWidth={1.75} />}
                         label={archived ? "Unarchive" : "Archive"}
-                        onClick={() => (toggleId(archivedIds, "soli:archived", c.id, setArchivedIds), setMenuOpenId(null))}
+                        onClick={() => (toggleFlag(c.id, "archived", !archived), setMenuOpenId(null))}
                       />
                       <MenuItem
                         icon={<Trash2 className="size-4 text-destructive" strokeWidth={1.75} />}

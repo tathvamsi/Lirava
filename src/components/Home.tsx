@@ -8,12 +8,12 @@ import { markRead, useStore } from "@/lib/store";
 
 export default function Home() {
   const router = useRouter();
-  const dots = useStore((s) => s.dots);
+  const vakils = useStore((s) => s.vakils);
   const loaded = useStore((s) => s.loaded);
   const [text, setText] = useState("");
   const [pending, start] = useTransition();
 
-  if (loaded && !dots.length) {
+  if (loaded && !vakils.length) {
     return (
       <div className="flex-1 overflow-y-auto">
         <div className="animate-page-rise mx-auto flex min-h-full max-w-[880px] flex-col items-center justify-center px-4 py-16 text-center sm:px-8">
@@ -23,7 +23,7 @@ export default function Home() {
     );
   }
 
-  const target = dots[0];
+  const target = vakils[0];
 
   const submit = () => {
     const value = text.trim();
@@ -32,7 +32,7 @@ export default function Home() {
     start(async () => {
       const res = await startConversation(target.id, value);
       markRead(target.id);
-      const canonicalId = target.id.startsWith("dot_") ? target.id.replace(/^dot_/, "vakil_") : target.id;
+      const canonicalId = target.id;
       const convId = res?.conversationId || (typeof res === "string" ? res : "");
       router.push(convId ? `/vakil/${canonicalId}?c=${convId}` : `/vakil/${canonicalId}`);
     });

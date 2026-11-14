@@ -28,11 +28,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const user = await getSessionUser();
   return (
     <html lang="en" className={`${display.variable} ${inter.variable} ${mono.variable} h-full`}>
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@500&family=Spectral:ital,wght@0,400;0,500;1,400&family=Zilla+Slab:wght@700&display=swap" />
-      </head>
       <body className="flex h-full overflow-hidden">
         <AppFrame hasUser={Boolean(user)}>{children}</AppFrame>
       </body>

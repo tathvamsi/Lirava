@@ -1,33 +1,34 @@
 import { getSessionUser } from "@/lib/auth";
-import { BACKEND_URL } from "@/lib/backend-client";
+import { BACKEND_URL, backendAuthHeaders } from "@/lib/backend-client";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-// Proxy SSE stream from standalone backend
+// Proxy the SSE stream from the standalone backend. The backend identifies the
+// user from the forwarded session token and only sends that user's events.
 export async function GET(req: Request) {
   const user = await getSessionUser();
-  const userId = user?.id || "usr-super-admin";
+  if (!user) return new Response("Sign in required.", { status: 401 });
 
   try {
     const controller = new AbortController();
     const onAbort = () => controller.abort();
     req.signal.addEventListener("abort", onAbort);
 
-    const backendRes = await fetch(
-      `${BACKEND_URL}/api/events?userId=${encodeURIComponent(userId)}`,
-      {
-        headers: {
-          Accept: "text/event-stream",
-        },
-        cache: "no-store",
-        signal: controller.signal,
-      }
-    );
+    const backendRes = await fetch(`${BACKEND_URL}/api/events`, {
+      headers: {
+        Accept: "text/event-stream",
+        ...(await backendAuthHeaders()),
+      },
+      cache: "no-store",
+      signal: controller.signal,
+    });
 
     if (!backendRes.ok || !backendRes.body) {
       req.signal.removeEventListener("abort", onAbort);
-      return new Response("Failed to connect to backend event stream", { status: 502 });
+      return new Response("Failed to connect to backend event stream", {
+        status: backendRes.status === 401 ? 401 : 502,
+      });
     }
 
     const reader = backendRes.body.getReader();
@@ -64,10 +65,11 @@ export async function GET(req: Request) {
         "X-Accel-Buffering": "no",
       },
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     if (req.signal.aborted) {
       return new Response(null, { status: 499 });
     }
-    return new Response(`Backend offline: ${err.message}`, { status: 503 });
+    const message = err instanceof Error ? err.message : "unknown error";
+    return new Response(`Backend offline: ${message}`, { status: 503 });
   }
 }

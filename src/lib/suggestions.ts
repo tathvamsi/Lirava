@@ -1,4 +1,4 @@
-/** Shared suggestion cards for the new-chat surfaces (Home + dot welcome).
+/** Shared suggestion cards for the new-chat surfaces (Home + vakil welcome).
  *
  *  Clicking a card fills the composer with the template (ChatGPT-style) —
  *  nothing is sent until the user reviews, edits the `[ ]` blanks, and hits

@@ -10,7 +10,7 @@ import { DocumentPreview } from "./DocumentPreview";
 const responseSchema = z.object({
   artifacts: z.array(z.object({
     id: z.string().min(1),
-    dotId: z.string().min(1),
+    vakilId: z.string().min(1),
     conversationId: z.string().nullable(),
     title: z.string(),
     filename: z.string(),
@@ -106,7 +106,7 @@ export function ArtifactLibrary() {
   }
 
   const needle = query.trim().toLowerCase();
-  const agentArtifacts = (artifacts || []).filter((artifact) => artifact.conversationId && artifact.dotId);
+  const agentArtifacts = (artifacts || []).filter((artifact) => artifact.conversationId && artifact.vakilId);
   const visible = agentArtifacts.filter((artifact) =>
     (filter === "All documents" || category(artifact.kind) === filter) &&
     (!needle || [artifact.title, artifact.filename, artifact.summary, artifact.content].some((value) => value?.toLowerCase().includes(needle))),
@@ -184,7 +184,7 @@ export function ArtifactLibrary() {
             <button type="button" autoFocus onClick={() => dialog.current?.close()} aria-label="Close document" className="btn-quiet size-9 shrink-0"><X className="size-5" aria-hidden /></button>
           </header>
           <div className="flex shrink-0 flex-wrap items-center gap-2 px-4 pb-4 sm:px-6">
-            {selected.conversationId && <Link href={`/vakil/${encodeURIComponent(selected.dotId.replace(/^dot_/, "vakil_"))}?c=${encodeURIComponent(selected.conversationId)}`} className="btn-secondary inline-flex items-center gap-1.5 px-3 py-2 text-xs"><MessageSquare className="size-3.5" aria-hidden /> Open chat</Link>}
+            {selected.conversationId && <Link href={`/vakil/${encodeURIComponent(selected.vakilId)}?c=${encodeURIComponent(selected.conversationId)}`} className="btn-secondary inline-flex items-center gap-1.5 px-3 py-2 text-xs"><MessageSquare className="size-3.5" aria-hidden /> Open chat</Link>}
             {selected.content && <button type="button" disabled={downloading} onClick={() => void download(selected, null, selected.kind === "text" ? "txt" : "md")} className="btn-quiet gap-1.5 px-3 py-2 text-xs disabled:opacity-40"><ArrowDownToLine className="size-3.5" aria-hidden /> Download text</button>}
             {selected.pdfFileId && <button type="button" disabled={downloading} onClick={() => void download(selected, selected.pdfFileId, "pdf")} className="btn-quiet px-3 py-2 text-xs disabled:opacity-40">Download PDF</button>}
             {selected.docxFileId && <button type="button" disabled={downloading} onClick={() => void download(selected, selected.docxFileId, "docx")} className="btn-quiet px-3 py-2 text-xs disabled:opacity-40">Download Word</button>}

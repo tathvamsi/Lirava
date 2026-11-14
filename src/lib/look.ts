@@ -37,7 +37,7 @@ const oneOf = <T extends string>(xs: readonly T[], v: unknown, fallback: T): T =
 export function normalizeLook(raw: Partial<Record<keyof Look, unknown>> | null | undefined): Look {
   const r = raw ?? {};
   const legacyMaterial: Record<string, Look["material"]> = { matte: "soft", glass: "glossy", metal: "glossy" };
-  const legacyEyes: Record<string, Look["eyes"]> = { dots: "classic", ovals: "classic", sleepy: "classic" };
+  const legacyEyes: Record<string, Look["eyes"]> = { vakils: "classic", ovals: "classic", sleepy: "classic" };
   const legacyShape: Record<string, Look["shape"]> = { blob: "chubby", capsule: "tall", cube: "chubby" };
   const color = typeof r.color === "string" ? r.color : DEFAULT_LOOK.color;
   return {

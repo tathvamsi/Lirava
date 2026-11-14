@@ -1,31 +1,36 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import type { DocumentArtifact, Message, ServerEvent, Snapshot } from "./types";
+import type { Conversation, DocumentArtifact, Message, ServerEvent, Snapshot } from "./types";
 
 // One client-side store fed by the server's event stream. Components read it with
 // useSyncExternalStore; the EventSource opens on first subscription. No effects needed.
 
-export type Toast = { id: number; dotId: string; title: string; body: string };
+export type Toast = { id: number; vakilId: string; title: string; body: string };
 
 export type State = Snapshot & {
   loaded: boolean;
   connected: boolean;
-  screens: Record<string, number>; // dotId -> timestamp of latest screenshot
-  urls: Record<string, string>; // dotId -> page its browser is on
+  screens: Record<string, number>; // vakilId -> timestamp of latest screenshot
+  urls: Record<string, string>; // vakilId -> page its browser is on
   lastRead: Record<string, number>;
   toasts: Toast[];
   activeArtifactId: string | null;
+  running: Record<string, "queued" | "running">;
+  /** Saved width of the document preview beside a chat (pixels), or null for the default. */
+  boardWidth: number | null;
 };
 
 const EMPTY: State = {
-  dots: [], messages: [], artifacts: [], routines: [], triggers: [], rules: [], memories: [], skills: [], passwords: [],
+  vakils: [], messages: [], artifacts: [], routines: [], triggers: [], rules: [], memories: [], skills: [], passwords: [],
   computer: { mode: "local", docker: false, image: "", model: "", models: [], computerTool: "", hasKey: true, keySource: null, cloudKey: null, openRouter: null, nvidia: null, groq: null, antigravity: null, triggersKey: null, sky: false, composio: false },
   apps: [],
   channels: [],
   conversations: [],
   loaded: false, connected: false, screens: {}, urls: {}, lastRead: {}, toasts: [],
   activeArtifactId: null,
+  running: {},
+  boardWidth: null,
 };
 
 let state: State = EMPTY;
@@ -54,26 +59,39 @@ const upsert = <T extends { id: string }>(list: T[], item: T): T[] => {
 };
 const without = <T extends { id: string }>(list: T[], id: string) => list.filter((x) => x.id !== id);
 
-export function activeDotId(): string | null {
+export function activeVakilId(): string | null {
   if (typeof window === "undefined") return null;
-  const id = window.location.pathname.match(/^\/(?:dots|vakil)\/([^/?#]+)/)?.[1];
-  return id ? (id.startsWith("dot_") ? id.replace(/^dot_/, "vakil_") : id) : null;
+  const id = window.location.pathname.match(/^\/vakil\/([^/?#]+)/)?.[1];
+  return id ?? null;
 }
 
-function loadLastRead(): Record<string, number> {
-  try {
-    return JSON.parse(localStorage.getItem("dots.lastRead") ?? "{}");
-  } catch {
-    return {};
-  }
+// Saved settings live in PostgreSQL (not in this browser), so they follow the person to any device.
+// Writes are batched: a burst of changes (dragging a panel, reading several chats) becomes one request.
+const pendingSaves = new Map<string, ReturnType<typeof setTimeout>>();
+function savePreference(key: string, value: unknown) {
+  clearTimeout(pendingSaves.get(key));
+  pendingSaves.set(
+    key,
+    setTimeout(() => {
+      pendingSaves.delete(key);
+      void fetch(`/api/preferences/${encodeURIComponent(key)}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ value }),
+      }).catch(() => undefined);
+    }, 800),
+  );
 }
 
-export function markRead(dotId: string) {
-  const lastRead = { ...state.lastRead, [dotId]: Date.now() };
-  try {
-    localStorage.setItem("dots.lastRead", JSON.stringify(lastRead));
-  } catch {}
+export function markRead(vakilId: string) {
+  const lastRead = { ...state.lastRead, [vakilId]: Date.now() };
   set({ lastRead });
+  savePreference("lastRead", lastRead);
+}
+
+export function setBoardWidthPreference(width: number) {
+  set({ boardWidth: width });
+  savePreference("artifactBoardWidth", width);
 }
 
 export function dismissToast(id: number) {
@@ -104,14 +122,18 @@ export function renameConversationLocally(id: string, title: string) {
   });
 }
 
+export function updateConversationFlagsLocally(id: string, flags: { pinned?: boolean; archived?: boolean }) {
+  set({ conversations: state.conversations.map((c) => (c.id === id ? { ...c, ...flags } : c)) });
+}
+
 export function updateConversationMatterLocally(id: string, matterId: string | null) {
   set({ conversations: state.conversations.map((c) => (c.id === id ? { ...c, matterId } : c)) });
 }
 
-export function moveConversationLocally(id: string, dotId: string) {
+export function moveConversationLocally(id: string, vakilId: string) {
   set({
-    conversations: state.conversations.map((c) => (c.id === id ? { ...c, dotId } : c)),
-    messages: state.messages.map((m) => (m.conversationId === id ? { ...m, dotId } : m)),
+    conversations: state.conversations.map((c) => (c.id === id ? { ...c, vakilId } : c)),
+    messages: state.messages.map((m) => (m.conversationId === id ? { ...m, vakilId } : m)),
   });
 }
 
@@ -124,28 +146,40 @@ export function removeMessageLocally(id: string) {
   set({ messages: without(state.messages, id) });
 }
 
-export function addConversationLocally(conversation: any) {
+export function addConversationLocally(conversation: Conversation & { userId?: string }) {
   set({ conversations: upsert(state.conversations, conversation) });
 }
 
 function apply(ev: ServerEvent) {
   switch (ev.type) {
     case "snapshot": {
-      const stored = loadLastRead();
-      const lastRead = { ...stored };
-      for (const d of ev.data.dots) lastRead[d.id] ??= Date.now();
-      set({ ...ev.data, loaded: true, connected: true, lastRead });
+      const lastRead = { ...(ev.data.preferences?.lastRead ?? {}) };
+      for (const d of ev.data.vakils) lastRead[d.id] ??= Date.now();
+      set({
+        ...ev.data,
+        running: ev.data.running ?? {},
+        boardWidth: ev.data.preferences?.artifactBoardWidth ?? null,
+        loaded: true,
+        connected: true,
+        lastRead,
+      });
       return;
     }
-    case "dot":
-      return set({ dots: upsert(state.dots, ev.data) });
-    case "dot_deleted":
-      return set({ dots: without(state.dots, ev.id), messages: state.messages.filter((m) => m.dotId !== ev.id) });
+    case "vakil":
+      return set({ vakils: upsert(state.vakils, ev.data) });
+    case "vakil_deleted":
+      return set({ vakils: without(state.vakils, ev.id), messages: state.messages.filter((m) => m.vakilId !== ev.id) });
     case "message": {
       set({ messages: upsert(state.messages, ev.data) });
       for (const l of messageListeners) l(ev.data);
-      if (ev.data.dotId === activeDotId() && document.visibilityState === "visible") markRead(ev.data.dotId);
+      if (ev.data.vakilId === activeVakilId() && document.visibilityState === "visible") markRead(ev.data.vakilId);
       return;
+    }
+    case "run_status": {
+      const running = { ...state.running };
+      if (ev.data.status === "idle") delete running[ev.conversationId];
+      else running[ev.conversationId] = ev.data.status;
+      return set({ running });
     }
     case "message_delta":
       return set({ messages: state.messages.map((m): Message => (m.id === ev.id ? { ...m, text: m.text + ev.delta } : m)) });
@@ -184,11 +218,11 @@ function apply(ev: ServerEvent) {
     case "password_deleted":
       return set({ passwords: without(state.passwords, ev.id) });
     case "screen":
-      return set({ screens: { ...state.screens, [ev.dotId]: ev.at } });
+      return set({ screens: { ...state.screens, [ev.vakilId]: ev.at } });
     case "browser_url":
-      return set({ urls: { ...state.urls, [ev.dotId]: ev.url } });
+      return set({ urls: { ...state.urls, [ev.vakilId]: ev.url } });
     case "notify":
-      return notify(ev.dotId, ev.title, ev.body);
+      return notify(ev.vakilId, ev.title, ev.body);
     case "computer":
       return set({ computer: ev.data });
     case "composio":
@@ -204,20 +238,20 @@ function apply(ev: ServerEvent) {
   }
 }
 
-function notify(dotId: string, title: string, body: string) {
-  const watching = activeDotId() === dotId && document.visibilityState === "visible" && document.hasFocus();
+function notify(vakilId: string, title: string, body: string) {
+  const watching = activeVakilId() === vakilId && document.visibilityState === "visible" && document.hasFocus();
   if (watching) return;
   if ("Notification" in window && Notification.permission === "granted" && document.visibilityState !== "visible") {
-    const n = new Notification(title, { body, tag: dotId });
+    const n = new Notification(title, { body, tag: vakilId });
     n.onclick = () => {
       window.focus();
       // Native notification click runs outside React, so there is no router here.
-      const canonicalId = dotId.startsWith("dot_") ? dotId.replace(/^dot_/, "vakil_") : dotId;
+      const canonicalId = vakilId;
       // eslint-disable-next-line @next/next/no-location-assign-relative-destination
       window.location.href = `/vakil/${canonicalId}`;
     };
   }
-  const toast = { id: ++toastSeq, dotId, title, body };
+  const toast = { id: ++toastSeq, vakilId, title, body };
   set({ toasts: [...state.toasts.slice(-3), toast] });
   setTimeout(() => dismissToast(toast.id), 7000);
 }
@@ -241,15 +275,14 @@ function disconnect() {
 }
 
 /**
- * Log the client out locally: close the event stream, drop every cached dot,
+ * Log the client out locally: close the event stream, drop every cached vakil,
  * chat, and config, and forget read receipts — so the next account to sign in
  * on this browser starts from zero and never sees the previous user's data.
  */
 export function resetStore() {
   disconnect();
-  try {
-    localStorage.removeItem("dots.lastRead");
-  } catch {}
+  for (const timer of pendingSaves.values()) clearTimeout(timer);
+  pendingSaves.clear();
   state = EMPTY;
   for (const l of listeners) l();
 }

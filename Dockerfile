@@ -12,7 +12,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     ca-certificates \
   && rm -rf /var/lib/apt/lists/* \
-  && npm install -g pnpm@12.5.1
+  && npm install -g pnpm@12.15.0
 
 # ── Stage 2: Dependencies ─────────────────────────────────────────────────────
 FROM base AS deps
@@ -48,7 +48,6 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3100
 ENV HOSTNAME="0.0.0.0"
-ENV DOTS_DATA_DIR=/app/.data
 
 # Install curl for container health checks
 RUN apt-get update && apt-get install -y --no-install-recommends \

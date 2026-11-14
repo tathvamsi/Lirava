@@ -1,5 +1,5 @@
 import { DEFAULT_LOOK } from "./look";
-import type { Look, Dot } from "./types";
+import type { Look, Vakil } from "./types";
 import type { SuggestionDef } from "./suggestions";
 
 export interface LegalPersona {
@@ -276,7 +276,7 @@ export const LEGAL_PERSONAS: LegalPersona[] = [
   },
 ];
 
-/** Find persona by dot name or id */
+/** Find persona by vakil name or id */
 export function getPersonaByName(name?: string | null): LegalPersona | undefined {
   if (!name) return undefined;
   const lower = name.toLowerCase().trim();
@@ -285,10 +285,10 @@ export function getPersonaByName(name?: string | null): LegalPersona | undefined
   );
 }
 
-/** Get suggestions appropriate for a specific dot/agent */
-export function getSuggestionsForDot(dot?: Dot | null): SuggestionDef[] {
-  if (dot) {
-    const persona = getPersonaByName(dot.name);
+/** Get suggestions appropriate for a specific vakil/agent */
+export function getSuggestionsForVakil(vakil?: Vakil | null): SuggestionDef[] {
+  if (vakil) {
+    const persona = getPersonaByName(vakil.name);
     if (persona && persona.suggestions.length) {
       return persona.suggestions;
     }

@@ -1,37 +1,65 @@
-import type { ArtifactKind, Attachment, CardData, Conversation, DocumentArtifact, Dot, Look, Matter, Memory, Message, Routine, Rule, Skill } from "./types";
+import type { Attachment, Conversation, DocumentArtifact, Vakil, Look, Matter, Message } from "./types";
 
 export const BACKEND_URL =
   process.env.BACKEND_URL ||
   process.env.NEXT_PUBLIC_BACKEND_URL ||
   "http://localhost:4000";
 
+/**
+ * Authorization header carrying the signed-in user's session token, read from the
+ * request cookie. Empty outside a request (or when signed out). The backend takes
+ * the user's identity from this token, never from anything in the request body.
+ */
+export async function backendAuthHeaders(): Promise<Record<string, string>> {
+  try {
+    const { cookies } = await import("next/headers");
+    const token = (await cookies()).get("soli_session")?.value;
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  } catch {
+    return {};
+  }
+}
+
+/** A failed call to the backend, carrying its HTTP status so callers can answer accurately (401 vs 429 vs 500). */
+export class BackendError extends Error {
+  constructor(
+    message: string,
+    public status: number,
+  ) {
+    super(message);
+    this.name = "BackendError";
+  }
+}
+
+// The response shape differs per endpoint and each call site names the type it expects.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function backendFetch<T = any>(
   path: string,
   options: RequestInit = {},
-  legacyPath?: string,
 ): Promise<T> {
   const url = `${BACKEND_URL.replace(/\/$/, "")}${path.startsWith("/") ? path : `/${path}`}`;
   const headers = {
     "Content-Type": "application/json",
+    ...(await backendAuthHeaders()),
     ...(options.headers || {}),
   };
 
-  let res = await fetch(url, {
+  const signal = options.signal ?? AbortSignal.timeout(Number(process.env.BACKEND_TIMEOUT_MS || 150_000));
+  const res = await fetch(url, {
     ...options,
     headers,
+    signal,
   });
-  // Older backend deployments expose the same resources under /api/dots.
-  if (res.status === 404 && legacyPath) {
-    res = await fetch(`${BACKEND_URL.replace(/\/$/, "")}${legacyPath}`, { ...options, headers });
-  }
 
   if (!res.ok) {
     let errMsg = `Backend request failed: ${res.status} ${res.statusText}`;
     try {
       const errBody = await res.json();
-      if (errBody.error) errMsg = errBody.error;
-    } catch {}
-    throw new Error(errMsg);
+      if (typeof errBody.error === "string") errMsg = errBody.error;
+    } catch {
+      // Not JSON: keep the generic message.
+    }
+    throw new BackendError(errMsg, res.status);
   }
 
   // Handle binary data or text
@@ -43,77 +71,67 @@ export async function backendFetch<T = any>(
 }
 
 // ---------------- Agent Execution ----------------
-export async function sendAgentMessage(
-  agentId: string,
+export async function sendVakilMessage(
+  vakilId: string,
   text: string,
   userId?: string,
   conversationId?: string,
   messageId?: string,
-  attachments?: Attachment[]
+  attachments?: Attachment[],
+  /** Save the question and return at once; the answer arrives through the live stream. */
+  background = false,
 ) {
   return backendFetch("/api/agent/message", {
     method: "POST",
-    body: JSON.stringify({ agentId, dotId: agentId, text, userId, conversationId, messageId, attachments }),
+    body: JSON.stringify({ vakilId, text, userId, conversationId, messageId, attachments, background }),
   });
 }
 
-export async function abortAgent(agentId: string) {
+export async function abortVakil(vakilId: string) {
   return backendFetch("/api/agent/abort", {
     method: "POST",
-    body: JSON.stringify({ agentId, dotId: agentId }),
+    body: JSON.stringify({ vakilId }),
   });
 }
 
-// ---------------- Agents (legacy server response names remain supported) ----------------
-export async function fetchAgents(userId: string = ""): Promise<Dot[]> {
-  const query = `?userId=${encodeURIComponent(userId)}`;
-  const data = await backendFetch<{ agents?: Dot[]; dots?: Dot[] }>(`/api/agents${query}`, {}, `/api/dots${query}`);
-  return data.agents ?? data.dots ?? [];
+// ---------------- Vakils ----------------
+export async function fetchVakils(): Promise<Vakil[]> {
+  const data = await backendFetch<{ vakils?: Vakil[] }>("/api/vakils");
+  return data.vakils ?? [];
 }
 
-export async function fetchAgent(id: string): Promise<Dot | null> {
+export async function fetchVakil(id: string): Promise<Vakil | null> {
   try {
-    const suffix = `/${encodeURIComponent(id)}`;
-    const data = await backendFetch<{ agent?: Dot; dot?: Dot }>(`/api/agents${suffix}`, {}, `/api/dots${suffix}`);
-    return data.agent ?? data.dot ?? null;
+    const data = await backendFetch<{ vakil?: Vakil }>(`/api/vakils/${encodeURIComponent(id)}`);
+    return data.vakil ?? null;
   } catch {
     return null;
   }
 }
 
-export async function createBackendAgent(input: {
+export async function createBackendVakil(input: {
   name: string;
   purpose: string;
   instructions?: string;
   look: Look;
-  userId?: string;
-}): Promise<Dot> {
-  const data = await backendFetch<{ agent?: Dot; dot: Dot }>("/api/agents", {
+}): Promise<Vakil> {
+  const data = await backendFetch<{ vakil: Vakil }>("/api/vakils", {
     method: "POST",
     body: JSON.stringify(input),
-  }, "/api/dots");
-  return data.agent ?? data.dot;
+  });
+  return data.vakil;
 }
 
-export async function deleteBackendAgent(id: string): Promise<boolean> {
-  const suffix = `/${encodeURIComponent(id)}`;
-  const data = await backendFetch<{ success: boolean }>(`/api/agents${suffix}`, {
-    method: "DELETE",
-  }, `/api/dots${suffix}`);
+export async function deleteBackendVakil(id: string): Promise<boolean> {
+  const data = await backendFetch<{ success: boolean }>(`/api/vakils/${encodeURIComponent(id)}`, { method: "DELETE" });
   return data.success;
 }
 
-// Existing routes and extensions can migrate independently.
-export const fetchDots = fetchAgents;
-export const fetchDot = fetchAgent;
-export const createBackendDot = createBackendAgent;
-export const deleteBackendDot = deleteBackendAgent;
-
 // ---------------- Conversations ----------------
-export async function fetchConversations(userId: string = "", dotId?: string): Promise<Conversation[]> {
+export async function fetchConversations(userId: string = "", vakilId?: string): Promise<Conversation[]> {
   const q = new URLSearchParams();
   if (userId) q.set("userId", userId);
-  if (dotId) q.set("dotId", dotId);
+  if (vakilId) q.set("vakilId", vakilId);
   const data = await backendFetch<{ conversations: Conversation[] }>(`/api/conversations?${q.toString()}`);
   return data.conversations || [];
 }
@@ -141,10 +159,10 @@ export async function fetchConversation(id: string): Promise<{ conversation: Con
   }
 }
 
-export async function createBackendConversation(agentId: string, title?: string, userId?: string, id?: string, matterId?: string): Promise<Conversation> {
+export async function createBackendConversation(vakilId: string, title?: string, userId?: string, id?: string, matterId?: string): Promise<Conversation> {
   const data = await backendFetch<{ conversation: Conversation }>("/api/conversations", {
     method: "POST",
-    body: JSON.stringify({ agentId, dotId: agentId, title, userId, id, matterId }),
+    body: JSON.stringify({ vakilId, title, userId, id, matterId }),
   });
   return data.conversation;
 }
@@ -165,7 +183,7 @@ export async function fetchArtifact(id: string): Promise<DocumentArtifact | null
 }
 
 export async function saveBackendArtifact(input: {
-  dotId: string;
+  vakilId: string;
   conversationId?: string;
   title: string;
   kind?: string;
@@ -193,24 +211,24 @@ export interface AuthResponse {
   expiresAt: string;
 }
 
-export async function loginBackend(input: {
-  email: string;
-  password: string;
-}): Promise<AuthResponse> {
+export async function loginBackend(
+  input: { email: string; password: string },
+  headers?: Record<string, string>,
+): Promise<AuthResponse> {
   return backendFetch<AuthResponse>("/api/auth/login", {
     method: "POST",
+    headers,
     body: JSON.stringify(input),
   });
 }
 
-export async function registerBackend(input: {
-  name: string;
-  email: string;
-  password: string;
-  inviteCode?: string;
-}): Promise<AuthResponse> {
+export async function registerBackend(
+  input: { name: string; email: string; password: string; inviteCode?: string },
+  headers?: Record<string, string>,
+): Promise<AuthResponse> {
   return backendFetch<AuthResponse>("/api/auth/register", {
     method: "POST",
+    headers,
     body: JSON.stringify(input),
   });
 }
@@ -228,14 +246,20 @@ export async function verifyBackendToken(
   }
 }
 
+/**
+ * The user behind a session token. Returns null when the backend says the session is not valid
+ * (signed out, expired, revoked): that answer is final. Throws when the backend cannot be reached,
+ * so the caller can tell "not signed in" apart from "cannot check right now".
+ */
 export async function getBackendUser(token: string): Promise<AuthUser | null> {
   try {
     const res = await backendFetch<{ user: AuthUser }>("/api/auth/me", {
       headers: { Authorization: `Bearer ${token}` },
     });
-    return res.user;
-  } catch {
-    return null;
+    return res.user ?? null;
+  } catch (err) {
+    if (err instanceof BackendError && err.status === 401) return null;
+    throw err;
   }
 }
 

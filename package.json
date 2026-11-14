@@ -1,7 +1,7 @@
 {
-  "name": "soli-web",
+  "name": "lirava-web",
   "version": "0.1.0",
-  "description": "Soli Legal AI Platform & SaaS Control Plane",
+  "description": "Lirava: AI workspace for Indian litigation teams",
   "private": true,
   "scripts": {
     "dev": "next dev --port 3100",
@@ -12,14 +12,15 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:migrate-sqlite": "tsx scripts/migrate-sqlite-to-postgres.ts",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "test": "node --import tsx --test tests/theme.test.ts tests/agent-compatibility.test.ts tests/detector.test.ts",
+    "check": "pnpm typecheck && pnpm lint && pnpm test",
+    "e2e": "node tests/e2e/core.e2e.mjs"
   },
   "dependencies": {
     "@ai-sdk/openai": "^4.0.71",
     "@modelcontextprotocol/sdk": "^1.30.1",
     "@qdrant/js-client-rest": "^1.19.0",
-    "@react-three/drei": "^10.7.9",
-    "@react-three/fiber": "^9.8.1",
     "ai": "^7.0.107",
     "bcryptjs": "^3.0.3",
     "croner": "^10.0.1",
@@ -31,14 +32,12 @@
     "next": "16.3.6",
     "openai": "^7.23.0",
     "pdf-lib": "^1.17.1",
-    "playwright": "^1.63.0",
     "postgres": "^3.4.9",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1",
     "server-only": "^0.0.1",
-    "three": "^0.186.1",
     "unpdf": "^1.8.1",
     "zod": "^4.6.5"
   },
@@ -49,14 +48,14 @@
     "@types/node": "^22.7.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@types/three": "^0.186.0",
     "dotenv": "^18.0.1",
     "drizzle-kit": "^0.31.10",
     "eslint": "^9",
     "eslint-config-next": "16.3.6",
     "tailwindcss": "^4",
     "tsx": "^4.23.15",
-    "typescript": "^5"
+    "typescript": "^5",
+    "playwright": "^1.63.0"
   },
   "packageManager": "pnpm@12.15.0",
   "engines": {

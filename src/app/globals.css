@@ -205,7 +205,7 @@ html {
   --soli-legal: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --soli-mono: var(--font-jetbrains-mono), ui-monospace, "Noto Sans Devanagari", monospace;
   --soli-h1: clamp(2.6rem, 5.4vw, 5rem);
-  --soli-h2: clamp(2.1rem, 4vw, 3.6rem);
+  --soli-h2: clamp(2rem, 3.3vw, 2.9rem);
   --soli-body-size: 1.0625rem;
   background: var(--soli-ivory);
 }
@@ -225,7 +225,7 @@ html {
   text-wrap: balance;
 }
 .soli-marketing h1 { font-size: var(--soli-h1) !important; line-height: 1.02 !important; letter-spacing: -.02em !important; }
-.soli-marketing .soli-hero-title { font-size: clamp(3.25rem, 4.5vw, 4.5rem) !important; }
+.soli-marketing .soli-hero-title { font-size: clamp(2.5rem, 4vw, 4.25rem) !important; line-height: 1.06 !important; }
 .soli-marketing h2 { font-size: var(--soli-h2) !important; line-height: 1.08 !important; letter-spacing: -.015em !important; }
 .soli-marketing h3 { font-family: var(--soli-display); font-size: clamp(1.25rem, 1.8vw, 1.5rem) !important; font-weight: 700; line-height: 1.25; }
 .soli-marketing p { max-width: 70ch; text-wrap: pretty; }
@@ -233,13 +233,8 @@ html {
 .soli-nav { transition: background-color 200ms ease, backdrop-filter 200ms ease, box-shadow 200ms ease; }
 .soli-nav-top { background: var(--card); }
 .soli-nav-scrolled { background: var(--card); backdrop-filter: blur(18px) saturate(150%); box-shadow: var(--lirava-shadow); }
-.soli-live-demo { position: absolute; inset: 0; z-index: 2; display: grid; min-height: 360px; grid-template-columns: 1.2fr .8fr; background: var(--card); }
-.soli-live-demo ~ * { visibility: hidden; }
-.soli-source-active { border-color: var(--lirava-border); }
-.soli-demo-caret { display: inline-block; height: 1em; margin-left: 2px; border-left: 1px solid var(--lirava-accent); vertical-align: -0.14em; }
-[data-loop="running"] .soli-demo-caret { animation: soli-demo-caret 700ms steps(1, end) infinite; }
+.soli-demo-caret { display: inline-block; height: 1em; margin-left: 2px; border-left: 1px solid var(--lirava-accent); vertical-align: -0.14em; animation: soli-demo-caret 700ms steps(1, end) infinite; }
 @keyframes soli-demo-caret { 50% { opacity: 0; } }
-@media (max-width: 767px) { .soli-live-demo { grid-template-columns: 1fr; } .soli-live-demo aside, .soli-live-demo ~ aside { display: none; } }
 .soli-marketing a,
 .soli-marketing button,
 .soli-marketing summary,
@@ -259,29 +254,12 @@ html {
   from { opacity: 0; transform: translateY(18px); }
   to { opacity: 1; transform: translateY(0); }
 }
-.soli-hero-layout { animation: none; }
-.soli-desk-scene { position: relative; min-height: 400px; }
-.soli-desk-sheet {
-  position: absolute;
-  width: 210px;
-  min-height: 190px;
-  padding: 24px;
-  border-radius: var(--lirava-radius-lg);
-  background-color: var(--card);
-  box-shadow: var(--lirava-shadow-elevated);
-}
-.soli-desk-sheet--notice { top: 32px; left: 3%; }
-.soli-desk-sheet--authority { top: 4px; right: 5%; width: 190px; min-height: 174px; }
-.soli-desk-sheet--draft { right: 20%; bottom: 12px; width: 250px; min-height: 206px; }
-.soli-desk-rule { display: block; height: 1px; width: 100%; background-color: var(--border); }
-@media (max-width: 1023px) { .soli-desk-scene { display: none; } }
 
 @media (prefers-reduced-motion: reduce) {
   .soli-marketing *,
   .soli-marketing *::before,
   .soli-marketing *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .01ms !important; }
   .soli-marketing article { transform: none !important; }
-  .soli-source-active { animation: none !important; }
 }
 
 @keyframes pulse-ring {

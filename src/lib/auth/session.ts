@@ -1,5 +1,6 @@
 import "server-only";
 
+import { cache } from "react";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { and, eq, gt } from "drizzle-orm";
@@ -58,7 +59,8 @@ export async function createSession(userId: string): Promise<void> {
  * Secure session check: verifies session via standalone soli-backend,
  * falling back to local DB if backend is starting up.
  */
-export async function getSessionUser(): Promise<SessionUser | null> {
+/** Cached for the duration of one request, so the layout and the page share a single lookup. */
+export const getSessionUser = cache(async (): Promise<SessionUser | null> => {
   const store = await cookies();
   const token = store.get(SESSION_COOKIE_NAME)?.value;
   if (!token) return null;
@@ -66,21 +68,23 @@ export async function getSessionUser(): Promise<SessionUser | null> {
   const claims = await verifySessionToken(token, env.SESSION_SECRET);
   if (!claims) return null;
 
-  // 1. Verify via standalone backend
+  // 1. Ask the backend. If it says the session is invalid, that is final: a signed-out or revoked
+  //    session must never be rescued by the fallback below.
   try {
     const { getBackendUser } = await import("@/lib/backend-client");
     const user = await getBackendUser(token);
-    if (user) {
-      return {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role === "admin" ? "admin" : "user",
-      };
-    }
-  } catch {}
+    if (!user) return null;
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role === "admin" ? "admin" : "user",
+    };
+  } catch {
+    // The backend could not be reached at all: fall through to the local check.
+  }
 
-  // 2. Fallback to direct DB query if needed
+  // 2. Backend unreachable: check the session directly in the database
   try {
     const rows = await db
       .select({
@@ -107,7 +111,7 @@ export async function getSessionUser(): Promise<SessionUser | null> {
   } catch {
     return null;
   }
-}
+});
 
 /** Use at the top of protected pages; redirects anonymous users to /login. */
 export async function requireUser(): Promise<SessionUser> {
@@ -118,7 +122,7 @@ export async function requireUser(): Promise<SessionUser> {
   return user;
 }
 
-/** Use at the top of admin pages; non-admins go to /chat. */
+/** Use at the top of admin pages; non-admins go to the home page. */
 export async function requireAdmin(): Promise<SessionUser> {
   const user = await requireUser();
   if (user.role !== "admin") {

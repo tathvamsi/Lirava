@@ -1,30 +1,39 @@
 import { afterEach, it } from "node:test";
 import assert from "node:assert/strict";
-import { fetchAgents, sendAgentMessage } from "../src/lib/backend-client";
+import { fetchVakils, sendVakilMessage } from "../src/lib/backend-client";
 
 const originalFetch = globalThis.fetch;
 afterEach(() => { globalThis.fetch = originalFetch; });
 
-it("falls back to the legacy agent list when the new route is unavailable", async () => {
+it("loads the vakil list from the one vakils endpoint", async () => {
   const paths: string[] = [];
   globalThis.fetch = async (input) => {
     paths.push(new URL(String(input)).pathname);
-    return paths.length === 1
-      ? new Response(null, { status: 404 })
-      : Response.json({ dots: [{ id: "dot_existing" }] });
+    return Response.json({ vakils: [{ id: "vakil_existing" }] });
   };
-  const agents = await fetchAgents("user_test");
-  assert.deepEqual(paths, ["/api/agents", "/api/dots"]);
-  assert.equal(agents[0].id, "dot_existing");
+  const vakils = await fetchVakils();
+  assert.deepEqual(paths, ["/api/vakils"]);
+  assert.equal(vakils[0].id, "vakil_existing");
 });
 
-it("sends the same agent identifier under both names during migration", async () => {
+it("does not retry a missing endpoint under another name", async () => {
+  const paths: string[] = [];
+  globalThis.fetch = async (input) => {
+    paths.push(new URL(String(input)).pathname);
+    return new Response(null, { status: 404 });
+  };
+  await assert.rejects(fetchVakils());
+  assert.deepEqual(paths, ["/api/vakils"]);
+});
+
+it("sends the message under the vakilId name only", async () => {
   let requestBody: Record<string, unknown> | undefined;
   globalThis.fetch = async (_input, init) => {
     requestBody = JSON.parse(String(init?.body));
     return Response.json({});
   };
-  await sendAgentMessage("dot_existing", "Hello");
-  assert.equal(requestBody?.agentId, "dot_existing");
-  assert.equal(requestBody?.dotId, "dot_existing");
+  await sendVakilMessage("vakil_existing", "Hello");
+  assert.equal(requestBody?.vakilId, "vakil_existing");
+  assert.equal("agentId" in (requestBody ?? {}), false);
+  assert.equal("dotId" in (requestBody ?? {}), false);
 });
