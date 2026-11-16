@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getSessionUser } from "@/lib/auth";
 import { backendFetch } from "@/lib/backend-client";
-import { VectorStoreError } from "@/lib/vector/errors";
 
 const requestSchema = z.object({
   question: z.string().trim().min(1),
@@ -26,7 +25,7 @@ export async function POST(request: Request) {
     );
   }
 
-  // 1. Primary: Forward to standalone soli-backend
+  // The answer comes from the Lirava backend. There is no second engine inside the web app.
   try {
     const data = await backendFetch("/api/legal/answer", {
       method: "POST",
@@ -37,22 +36,6 @@ export async function POST(request: Request) {
     });
     return NextResponse.json(data);
   } catch {
-    // 2. Fallback to in-app legal knowledge engine if backend is offline
-    try {
-      const { answerLegalQuestion } = await import("@/legal");
-      const result = await answerLegalQuestion({
-        ...parsed.data,
-        userId: user.id,
-      });
-      return NextResponse.json(result);
-    } catch (error) {
-      if (error instanceof VectorStoreError) {
-        return NextResponse.json(
-          { error: "corpus_unavailable", code: error.code },
-          { status: 503 },
-        );
-      }
-      throw error;
-    }
+    return NextResponse.json({ error: "Failed to fetch answer." }, { status: 502 });
   }
 }
