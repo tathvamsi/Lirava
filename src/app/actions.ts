@@ -70,18 +70,23 @@ const GENERIC_TITLES = new Set(["", "New matter chat", "New consultation", "New 
 export async function backfillConversationTitles() {
   const user = await caller();
   const conversations = await fetchConversations(user.id);
-  const renamed: Array<{ id: string; title: string }> = [];
-  // Only chats with a placeholder title are opened, and at most a handful per visit.
-  for (const conversation of conversations.filter((c) => GENERIC_TITLES.has(c.title)).slice(0, 10)) {
-    const data = await fetchConversation(conversation.id);
-    const firstUserMessage = data?.messages.find((message) => message.role === "user" && message.text.trim());
-    if (!firstUserMessage) continue;
-    const title = buildConversationTitle(firstUserMessage.text);
-    if (title === conversation.title) continue;
-    await renameConversation(conversation.id, title);
-    renamed.push({ id: conversation.id, title });
-  }
-  return renamed;
+  // Only chats with a placeholder title are opened, and at most a handful per visit. They are independent, so they
+  // are handled at the same time instead of one after the other.
+  const results = await Promise.all(
+    conversations
+      .filter((c) => GENERIC_TITLES.has(c.title))
+      .slice(0, 10)
+      .map(async (conversation) => {
+        const data = await fetchConversation(conversation.id);
+        const firstUserMessage = data?.messages.find((message) => message.role === "user" && message.text.trim());
+        if (!firstUserMessage) return null;
+        const title = buildConversationTitle(firstUserMessage.text);
+        if (title === conversation.title) return null;
+        await renameConversation(conversation.id, title);
+        return { id: conversation.id, title };
+      }),
+  );
+  return results.filter((r): r is { id: string; title: string } => r !== null);
 }
 
 export async function sendMessage(

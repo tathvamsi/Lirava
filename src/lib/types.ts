@@ -5,18 +5,6 @@ export const SHAPES = ["round", "chubby", "tall"] as const;
 export const MATERIALS = ["soft", "glossy", "velvet", "toon"] as const;
 export const EYES = ["classic", "happy", "wide", "wink"] as const;
 export const ACCESSORIES = ["none", "bow", "cap", "antenna", "halo", "sprout", "headphones"] as const;
-/** Body colors: soft pastels. */
-export const COLORS = [
-  "#ffa7c4", "#ffb8a1", "#ffd98a", "#c8ec8f", "#97e0b8", "#8fdcd6",
-  "#9fcbff", "#b9b3ff", "#dcb4f5", "#f4efe6", "#c9c3bb", "#6e6a78",
-] as const;
-/** Feet colors: deeper tones that anchor the body. */
-export const FEET_COLORS = [
-  "#d8195f", "#e0492d", "#d98a00", "#4f9a2f", "#1f8f5f", "#138a8a",
-  "#2a6fdb", "#5b46d6", "#9b3cc4", "#3b3842", "#8a5a3c", "#f4f4f4",
-] as const;
-export const EYE_COLORS = ["#2b5fd9", "#1f8f5f", "#8a4bd6", "#c2410c", "#3b3842"] as const;
-
 export type Shape = (typeof SHAPES)[number];
 export type Material = (typeof MATERIALS)[number];
 export type Eyes = (typeof EYES)[number];
@@ -149,12 +137,7 @@ export type RuleDecision = "allow" | "ask" | "never";
 export type Rule = { id: string; vakilId: string | null; action: string; decision: RuleDecision; createdAt: number };
 export type Memory = { id: string; vakilId: string; text: string; createdAt: number };
 export type Skill = { id: string; vakilId: string; name: string; description: string; body: string; createdAt: number };
-/** A Composio trigger: when something happens in one of the user's apps, a vakil runs an instruction. */
-// Picking a trigger: apps connected for triggers, and the events each app offers.
-export type TriggerApp = { slug: string; name: string; connected: boolean };
 export type TriggerField = { name: string; type: string; title: string; description: string; required: boolean; enum?: string[]; default?: unknown };
-export type TriggerType = { slug: string; name: string; description: string; fields: TriggerField[] };
-
 export type AppTrigger = {
   id: string;
   vakilId: string;

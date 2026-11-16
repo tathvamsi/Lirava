@@ -1,4 +1,4 @@
-import type { Attachment, Conversation, DocumentArtifact, Vakil, Look, Matter, MatterEvent, MatterIntake, Message } from "./types";
+import type { Attachment, Conversation, Vakil, Matter, MatterEvent, MatterIntake, Message } from "./types";
 
 export const BACKEND_URL =
   process.env.BACKEND_URL ||
@@ -87,13 +87,6 @@ export async function sendVakilMessage(
   });
 }
 
-export async function abortVakil(vakilId: string) {
-  return backendFetch("/api/agent/abort", {
-    method: "POST",
-    body: JSON.stringify({ vakilId }),
-  });
-}
-
 // ---------------- Vakils ----------------
 export async function fetchVakils(): Promise<Vakil[]> {
   const data = await backendFetch<{ vakils?: Vakil[] }>("/api/vakils");
@@ -107,24 +100,6 @@ export async function fetchVakil(id: string): Promise<Vakil | null> {
   } catch {
     return null;
   }
-}
-
-export async function createBackendVakil(input: {
-  name: string;
-  purpose: string;
-  instructions?: string;
-  look: Look;
-}): Promise<Vakil> {
-  const data = await backendFetch<{ vakil: Vakil }>("/api/vakils", {
-    method: "POST",
-    body: JSON.stringify(input),
-  });
-  return data.vakil;
-}
-
-export async function deleteBackendVakil(id: string): Promise<boolean> {
-  const data = await backendFetch<{ success: boolean }>(`/api/vakils/${encodeURIComponent(id)}`, { method: "DELETE" });
-  return data.success;
 }
 
 // ---------------- Conversations ----------------
@@ -184,36 +159,6 @@ export async function createBackendConversation(vakilId: string, title?: string,
   return data.conversation;
 }
 
-// ---------------- Artifacts ----------------
-export async function fetchArtifacts(userId: string = ""): Promise<DocumentArtifact[]> {
-  const data = await backendFetch<{ artifacts: DocumentArtifact[] }>(`/api/artifacts?userId=${encodeURIComponent(userId)}`);
-  return data.artifacts || [];
-}
-
-export async function fetchArtifact(id: string): Promise<DocumentArtifact | null> {
-  try {
-    const data = await backendFetch<{ artifact: DocumentArtifact }>(`/api/artifacts/${encodeURIComponent(id)}`);
-    return data.artifact || null;
-  } catch {
-    return null;
-  }
-}
-
-export async function saveBackendArtifact(input: {
-  vakilId: string;
-  conversationId?: string;
-  title: string;
-  kind?: string;
-  content: string;
-  userId?: string;
-}): Promise<DocumentArtifact> {
-  const data = await backendFetch<{ artifact: DocumentArtifact }>("/api/artifacts", {
-    method: "POST",
-    body: JSON.stringify(input),
-  });
-  return data.artifact;
-}
-
 // ---------------- Authentication ----------------
 export interface AuthUser {
   id: string;
@@ -248,19 +193,6 @@ export async function registerBackend(
     headers,
     body: JSON.stringify(input),
   });
-}
-
-export async function verifyBackendToken(
-  token: string
-): Promise<{ valid: boolean; user: AuthUser | null }> {
-  try {
-    return await backendFetch<{ valid: boolean; user: AuthUser | null }>("/api/auth/verify", {
-      method: "POST",
-      body: JSON.stringify({ token }),
-    });
-  } catch {
-    return { valid: false, user: null };
-  }
 }
 
 /**

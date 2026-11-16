@@ -60,16 +60,3 @@ export function toggleSidebar() {
     setSidebarCollapsed(!desktopCollapsed);
   }
 }
-
-/** True while the media query matches. Server render assumes a wide screen. */
-export function useMediaQuery(query: string): boolean {
-  return useSyncExternalStore(
-    (l) => {
-      const m = matchMedia(query);
-      m.addEventListener("change", l);
-      return () => m.removeEventListener("change", l);
-    },
-    () => matchMedia(query).matches,
-    () => true,
-  );
-}

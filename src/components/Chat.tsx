@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, use, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { Suspense, memo, use, useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Markdown, { defaultUrlTransform, type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -108,10 +108,11 @@ export default function Chat({ vakil, conversation, matterId, matterLabel }: { v
   // The source behind a citation opens beside the chat, in the same pane as documents.
   const [openSource, setOpenSource] = useState<Citation | null>(null);
   const rightPane: "artifact" | "source" | null = activeArtifactId ? "artifact" : openSource ? "source" : null;
-  const openCitation = (citation: Citation) => {
+  // Stable between renders, so rows that did not change are not re-rendered while an answer streams in.
+  const openCitation = useCallback((citation: Citation) => {
     setActiveArtifact(null);
     setOpenSource(citation);
-  };
+  }, []);
   const hasKey = useStore((s) => s.computer.hasKey || s.computer.openRouter !== null || s.computer.nvidia !== null || s.computer.groq !== null || s.computer.antigravity !== null);
   const [, start] = useTransition();
   const [submitting, setSubmitting] = useState(false);
@@ -755,8 +756,11 @@ const ACTIVITY_ICON: [RegExp, typeof Globe][] = [
 ];
 
 // ── MessageRow ───────────────────────────────────────────────────────────────
-/** One chat line. In channels, `showName` labels which vakil wrote it. */
-export function MessageRow({
+/**
+ * One chat line. In channels, `showName` labels which vakil wrote it. Memoized: while an answer streams in, only the
+ * line being written changes, so every earlier line (and its Markdown) is left alone instead of re-rendered per chunk.
+ */
+export const MessageRow = memo(function MessageRow({
   m,
   vakil,
   showName = false,
@@ -953,7 +957,7 @@ export function MessageRow({
       </div>
     </div>
   );
-}
+});
 
 function MessageActions({ text, onRegenerate }: { text: string; onRegenerate?: () => void }) {
   const [copied, setCopied] = useState(false);

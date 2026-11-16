@@ -37,13 +37,6 @@ let state: State = EMPTY;
 const listeners = new Set<() => void>();
 let source: EventSource | null = null;
 let toastSeq = 0;
-const messageListeners = new Set<(m: Message) => void>();
-
-/** Listen for message updates outside React (e.g. a live voice call waiting for work to land). */
-export function onMessage(listener: (m: Message) => void): () => void {
-  messageListeners.add(listener);
-  return () => messageListeners.delete(listener);
-}
 
 function set(patch: Partial<State>) {
   state = { ...state, ...patch };
@@ -130,16 +123,8 @@ export function updateConversationMatterLocally(id: string, matterId: string | n
   set({ conversations: state.conversations.map((c) => (c.id === id ? { ...c, matterId } : c)) });
 }
 
-export function moveConversationLocally(id: string, vakilId: string) {
-  set({
-    conversations: state.conversations.map((c) => (c.id === id ? { ...c, vakilId } : c)),
-    messages: state.messages.map((m) => (m.conversationId === id ? { ...m, vakilId } : m)),
-  });
-}
-
 export function addMessageLocally(message: Message) {
   set({ messages: upsert(state.messages, message) });
-  for (const l of messageListeners) l(message);
 }
 
 export function removeMessageLocally(id: string) {
@@ -171,7 +156,6 @@ function apply(ev: ServerEvent) {
       return set({ vakils: without(state.vakils, ev.id), messages: state.messages.filter((m) => m.vakilId !== ev.id) });
     case "message": {
       set({ messages: upsert(state.messages, ev.data) });
-      for (const l of messageListeners) l(ev.data);
       if (ev.data.vakilId === activeVakilId() && document.visibilityState === "visible") markRead(ev.data.vakilId);
       return;
     }

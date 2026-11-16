@@ -3,7 +3,6 @@ import "server-only";
 import {
   generateRagResponse,
   type RagResponse,
-  type RagSource,
 } from "@/lib/rag";
 
 export interface LegalAnswerInput {
@@ -16,8 +15,6 @@ export interface LegalAnswerInput {
 }
 
 export type LegalAnswer = RagResponse;
-export type LegalSource = RagSource;
-
 /**
  * Deep module interface for Soli's legal knowledge engine.
  *
