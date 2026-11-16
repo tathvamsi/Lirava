@@ -4,9 +4,12 @@ import { getSessionUser } from "@/lib/auth";
 import AppFrame from "@/components/AppFrame";
 import "./globals.css";
 
-const display = DM_Serif_Display({ variable: "--font-dm-serif", subsets: ["latin"], weight: "400", display: "swap" });
+// Only Inter is used on every page, so only it is preloaded. The serif is for court-paper documents and the mono
+// font for code, so they load when something on the page needs them (preloading them on every page made the
+// browser warn that the files were "not used" and wasted a download).
+const display = DM_Serif_Display({ variable: "--font-dm-serif", subsets: ["latin"], weight: "400", display: "swap", preload: false });
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"], display: "swap" });
-const mono = JetBrains_Mono({ variable: "--font-jetbrains-mono", subsets: ["latin"], display: "swap" });
+const mono = JetBrains_Mono({ variable: "--font-jetbrains-mono", subsets: ["latin"], display: "swap", preload: false });
 
 export const metadata: Metadata = {
   title: "Lirava — AI legal work for Indian litigation teams",

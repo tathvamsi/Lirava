@@ -115,7 +115,32 @@ export type Message = {
 
 /** One chat thread with a vakil (like a ChatGPT conversation). Memory, skills and rules are shared across them. */
 export type Conversation = { id: string; vakilId: string; matterId?: string | null; title: string; pinned?: boolean; archived?: boolean; createdAt: number; updatedAt: number };
-export type Matter = { id: string; userId: string; title: string; client: string; court: string; status: "Active" | "On hold" | "Closed"; nextDate: string | null; notes: string; createdAt: number; updatedAt: number };
+export type MatterStage = "received" | "reviewing" | "drafting" | "review" | "closed";
+export type MatterIntake = {
+  brief: string;
+  caseType: string;
+  oppositeParty: string;
+  keyDates: Array<{ label: string; date: string }>;
+  outcome: string;
+  urgency: "routine" | "soon" | "urgent";
+  deadline: string;
+};
+export type Matter = { id: string; userId: string; title: string; client: string; court: string; status: "Active" | "On hold" | "Closed"; nextDate: string | null; notes: string; stage?: MatterStage; intake?: MatterIntake | null; handedOverAt?: number | null; createdAt: number; updatedAt: number };
+/** One entry on a matter's timeline. Checkpoints wait for the person's approval. */
+export type MatterEvent = {
+  id: string;
+  matterId: string;
+  type: "stage" | "note" | "checkpoint" | "deliverable";
+  stage: MatterStage | null;
+  title: string;
+  body: string;
+  conversationId: string | null;
+  artifactId: string | null;
+  status: "open" | "approved" | "changes" | null;
+  resolutionNote: string | null;
+  createdAt: number;
+  resolvedAt: number | null;
+};
 
 /** A group chat: the user talks to several vakils; the lead coordinates and delegates to members. */
 export type Channel = { id: string; name: string; leadId: string; memberIds: string[]; createdAt: number };

@@ -9,18 +9,21 @@ import {
   Plus,
   Trash2,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { FileText } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
+  answerCheckpoint,
   createMatterChat,
   deleteConversation,
+  getMatterFile,
   listMatterConversations,
   listMatters,
   moveConversationToMatter,
   setConversationFlags,
 } from "@/app/actions";
-import type { Conversation, Matter } from "@/lib/types";
+import type { Conversation, Matter, MatterEvent } from "@/lib/types";
+import CaseFile from "@/components/matters/CaseFile";
 import {
   deleteConversationLocally,
   updateConversationFlagsLocally,
@@ -53,6 +56,9 @@ export default function MatterWorkspace({
   const router = useRouter();
   const [documents, setDocuments] = useState<MatterDocument[]>([]);
   const firstVakil = useStore((state) => state.vakils[0]);
+  const storeConversations = useStore((state) => state.conversations);
+  const [events, setEvents] = useState<MatterEvent[]>([]);
+  const justHanded = useSearchParams().get("handed") === "1";
 
   useEffect(() => {
     void params.then(({ id }) => {
@@ -61,16 +67,56 @@ export default function MatterWorkspace({
         .then((response) => (response.ok ? response.json() : { documents: [] }))
         .then((data: { documents?: MatterDocument[] }) => setDocuments(data.documents ?? []))
         .catch(() => setDocuments([]));
-      Promise.all([listMatters(), listMatterConversations(id)])
-        .then(([matters, chats]) => {
+      Promise.all([listMatters(), listMatterConversations(id), getMatterFile(id).catch(() => null)])
+        .then(([matters, chats, file]) => {
           setAllMatters(matters);
-          setMatter(matters.find((item) => item.id === id) || null);
+          setMatter(file?.matter ?? matters.find((item) => item.id === id) ?? null);
+          setEvents(file?.events ?? []);
           setConversations(chats);
           setState("ready");
         })
         .catch(() => setState("error"));
     });
   }, [params]);
+
+  // Counsel works in the chats, so the case file is refreshed while the page is open.
+  useEffect(() => {
+    if (!matterId) return;
+    let active = true;
+    const refresh = () => {
+      if (document.visibilityState !== "visible") return;
+      void getMatterFile(matterId).then((file) => {
+        if (!active || !file) return;
+        setMatter(file.matter);
+        setEvents(file.events);
+      }).catch(() => undefined);
+    };
+    const timer = window.setInterval(refresh, 8000);
+    document.addEventListener("visibilitychange", refresh);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", refresh);
+    };
+  }, [matterId]);
+
+  const chatHref = (conversationId: string) => {
+    const chat = storeConversations.find((item) => item.id === conversationId) ?? conversations.find((item) => item.id === conversationId);
+    return chat ? `/vakil/${chat.vakilId}?c=${encodeURIComponent(chat.id)}&matter=${encodeURIComponent(matterId)}` : null;
+  };
+
+  /** Resolves a checkpoint; returns a message when it could not be saved. */
+  async function answer(eventId: string, resolution: "approved" | "changes", note: string): Promise<string | null> {
+    try {
+      const next = await answerCheckpoint(matterId, eventId, resolution, note);
+      setEvents(next);
+      const file = await getMatterFile(matterId).catch(() => null);
+      if (file) setMatter(file.matter);
+      return null;
+    } catch {
+      return "We could not save that. Please try again.";
+    }
+  }
 
   async function newChat() {
     if (!matterId || !firstVakil || creating) return;
@@ -184,6 +230,12 @@ export default function MatterWorkspace({
           {creating ? "Creating…" : "New chat"}
         </button>
       </div>
+      {justHanded && (
+        <p role="status" className="mt-6 rounded-xl bg-highlight px-4 py-3 text-[14px] text-foreground/85">
+          Your case has been handed over. Counsel is reading your brief and will post updates below.
+        </p>
+      )}
+      <CaseFile matter={matter} events={events} chatHref={chatHref} onAnswer={answer} />
       {actionError && (
         <p role="alert" className="mt-6 text-[13px] text-red-300">
           {actionError}

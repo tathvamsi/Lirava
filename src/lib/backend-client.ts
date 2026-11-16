@@ -1,4 +1,4 @@
-import type { Attachment, Conversation, DocumentArtifact, Vakil, Look, Matter, Message } from "./types";
+import type { Attachment, Conversation, DocumentArtifact, Vakil, Look, Matter, MatterEvent, MatterIntake, Message } from "./types";
 
 export const BACKEND_URL =
   process.env.BACKEND_URL ||
@@ -141,9 +141,26 @@ export async function fetchMatters(userId: string): Promise<Matter[]> {
   return (data.matters || []).map(normalizeMatter);
 }
 
-export async function createBackendMatter(input: { userId: string; title: string; client?: string; court?: string; nextDate?: string; notes?: string }): Promise<Matter> {
+export async function createBackendMatter(input: { userId: string; title: string; client?: string; court?: string; nextDate?: string; notes?: string; intake?: MatterIntake }): Promise<Matter> {
   const data = await backendFetch<{ matter: Matter }>("/api/matters", { method: "POST", body: JSON.stringify(input) });
   return normalizeMatter(data.matter);
+}
+
+export async function fetchMatterFile(id: string): Promise<{ matter: Matter; events: MatterEvent[] } | null> {
+  try {
+    const data = await backendFetch<{ matter: Matter; events: MatterEvent[] }>(`/api/matters/${encodeURIComponent(id)}`);
+    return { matter: normalizeMatter(data.matter), events: data.events || [] };
+  } catch {
+    return null;
+  }
+}
+
+export async function resolveBackendCheckpoint(matterId: string, eventId: string, resolution: "approved" | "changes", note: string): Promise<MatterEvent[]> {
+  const data = await backendFetch<{ events: MatterEvent[] }>(`/api/matters/${encodeURIComponent(matterId)}/checkpoints/${encodeURIComponent(eventId)}`, {
+    method: "POST",
+    body: JSON.stringify({ resolution, note }),
+  });
+  return data.events || [];
 }
 
 function normalizeMatter(matter: Matter): Matter {

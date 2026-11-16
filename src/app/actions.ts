@@ -2,13 +2,15 @@
 
 import { requireUser } from "@/lib/auth";
 import { buildConversationTitle } from "@/lib/conversation-title";
-import type { Attachment } from "@/lib/types";
+import type { Attachment, MatterIntake } from "@/lib/types";
 import {
   backendFetch,
   createBackendConversation,
   sendVakilMessage,
   createBackendMatter,
   fetchMatters,
+  fetchMatterFile,
+  resolveBackendCheckpoint,
   fetchConversations,
   fetchConversation,
 } from "@/lib/backend-client";
@@ -31,6 +33,23 @@ export async function listMatters() {
 export async function createMatter(input: { title: string; client?: string; court?: string; nextDate?: string; notes?: string }) {
   const user = await caller();
   return createBackendMatter({ ...input, userId: user.id });
+}
+
+/** Hands a case to counsel: the matter is created with the brief, and the timeline starts. */
+export async function handOverCase(input: { title: string; client?: string; court?: string; intake: MatterIntake }) {
+  const user = await caller();
+  return createBackendMatter({ ...input, nextDate: input.intake.deadline || undefined, notes: input.intake.brief, userId: user.id });
+}
+
+/** A matter with its timeline of stages, notes, checkpoints and deliverables. */
+export async function getMatterFile(matterId: string) {
+  await caller();
+  return fetchMatterFile(matterId);
+}
+
+export async function answerCheckpoint(matterId: string, eventId: string, resolution: "approved" | "changes", note: string) {
+  await caller();
+  return resolveBackendCheckpoint(matterId, eventId, resolution, note);
 }
 
 export async function listMatterConversations(matterId: string) {

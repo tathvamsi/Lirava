@@ -103,13 +103,21 @@ export default function MattersPage() {
             next steps together.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => setShowForm(true)}
-          className="btn-primary inline-flex h-10 shrink-0 items-center justify-center gap-2 px-4 text-[13px]"
-        >
-          <Plus className="size-4" /> New matter
-        </button>
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setShowForm(true)}
+            className="btn-secondary inline-flex h-10 shrink-0 items-center justify-center gap-2 px-4 text-[13px]"
+          >
+            <Plus className="size-4" /> New matter
+          </button>
+          <Link
+            href="/matters/new"
+            className="btn-primary inline-flex h-10 shrink-0 items-center justify-center gap-2 px-4 text-[13px]"
+          >
+            Hand over a case
+          </Link>
+        </div>
       </div>
 
       <div className="mt-7 grid gap-3 sm:grid-cols-3">
