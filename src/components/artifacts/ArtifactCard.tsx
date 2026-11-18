@@ -1,6 +1,6 @@
 "use client";
 
-import { Download, FileText, Scale } from "lucide-react";
+import { Download, FileText, ListChecks, Scale } from "lucide-react";
 import { setActiveArtifact, useStore } from "@/lib/store";
 
 export function ArtifactCard({ artifactId }: { artifactId: string }) {
@@ -11,7 +11,8 @@ export function ArtifactCard({ artifactId }: { artifactId: string }) {
   if (!artifact) return null;
 
   const isLegal = artifact.kind === "legal_paper" || artifact.kind === "contract";
-  const Icon = isLegal ? Scale : FileText;
+  const isPlan = artifact.kind === "plan";
+  const Icon = isPlan ? ListChecks : isLegal ? Scale : FileText;
 
   const openBoard = () => {
     setActiveArtifact(artifact.id);
@@ -24,10 +25,11 @@ export function ArtifactCard({ artifactId }: { artifactId: string }) {
   if (artifact.pdfFileId) formats.push("PDF");
   if (artifact.docxFileId) formats.push("Word");
   if (!formats.length) formats.push(isLegal ? "Legal Paper" : "Markdown");
-  const subtitle = `Document: ${formats.join(", ")}`;
+  const subtitle = isPlan ? "Plan · tick off actions as you go" : isLegal ? "Document · open to read and edit" : `Document: ${formats.join(", ")}`;
 
-  // Primary download target (prefer PDF if available, otherwise docx or fileId)
-  const primaryDownloadId = artifact.pdfFileId || artifact.docxFileId || artifact.fileId;
+  // Primary download target: a document or plan is exported from its current text, so edits are included.
+  const exportHref = isPlan || isLegal ? `/api/artifacts/${encodeURIComponent(artifact.id)}/export?format=pdf` : null;
+  const primaryDownloadId = exportHref ? null : artifact.pdfFileId || artifact.docxFileId || artifact.fileId;
 
   return (
     <div
@@ -63,6 +65,12 @@ export function ArtifactCard({ artifactId }: { artifactId: string }) {
 
       {/* Right Action Button(s) */}
       <div className="flex shrink-0 items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+        {exportHref && (
+          <a href={exportHref} download className="btn-secondary h-8 px-3.5 text-[12px] sm:text-[13px] font-medium rounded-lg inline-flex items-center gap-1.5 transition-colors shadow-2xs" title="Download PDF">
+            <Download className="size-3.5 text-foreground/60" />
+            <span>PDF</span>
+          </a>
+        )}
         {primaryDownloadId && (
           <a
             href={`/api/files/${primaryDownloadId}?download=1`}

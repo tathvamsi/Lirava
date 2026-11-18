@@ -183,14 +183,14 @@ export default function MatterWorkspace({
 
   if (state === "loading")
     return (
-      <main role="status" className="mx-auto max-w-5xl px-5 py-12 text-foreground/60">
+      <div role="status" className="mx-auto max-w-5xl px-5 py-12 text-foreground/60">
         Loading matter workspace…
-      </main>
+      </div>
     );
 
   if (state === "error" || !matter)
     return (
-      <main className="mx-auto max-w-5xl px-5 py-12">
+      <div className="mx-auto max-w-5xl px-5 py-12">
         <Link href="/matters" className="inline-flex items-center gap-2 text-[13px] text-foreground/55 hover:text-foreground">
           <ArrowLeft className="size-4" />
           All matters
@@ -198,11 +198,11 @@ export default function MatterWorkspace({
         <p role="alert" className="mt-8 text-[15px] text-foreground/70">
           {state === "error" ? "We could not load this matter. Please refresh the page." : "This matter was not found."}
         </p>
-      </main>
+      </div>
     );
 
   return (
-    <main className="mx-auto max-w-5xl px-5 py-10 sm:px-8">
+    <div className="mx-auto max-w-5xl px-5 py-10 sm:px-8">
       <Link
         href="/matters"
         className="inline-flex items-center gap-2 text-[13px] text-foreground/55 hover:text-foreground"
@@ -392,6 +392,6 @@ export default function MatterWorkspace({
           </div>
         </div>
       )}
-    </main>
+    </div>
   );
 }

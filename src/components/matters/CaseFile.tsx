@@ -35,6 +35,10 @@ export default function CaseFile({
   const reduce = useReducedMotion();
   const stage: MatterStage = matter.stage ?? "received";
   const stageIndex = Math.max(0, STAGES.findIndex((s) => s.id === stage));
+  // Only stages the case really passed through are filled; skipped ones stay empty.
+  const reached = new Set<MatterStage>(events.filter((e) => e.type === "stage" && e.stage).map((e) => e.stage as MatterStage));
+  reached.add("received");
+  reached.add(stage);
   const open = events.filter((e) => e.type === "checkpoint" && e.status === "open");
   const deliverables = events.filter((e) => e.type === "deliverable");
   const timeline = [...events].reverse();
@@ -50,7 +54,7 @@ export default function CaseFile({
       <section aria-label="Case progress">
         <ol className="grid grid-cols-5 gap-1" aria-label="Stages">
           {STAGES.map((item, index) => {
-            const done = index < stageIndex;
+            const done = index < stageIndex && reached.has(item.id);
             const current = index === stageIndex;
             return (
               <li key={item.id} aria-current={current ? "step" : undefined} className="min-w-0">

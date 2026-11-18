@@ -66,7 +66,7 @@ export type Citation =
   | { kind: "document"; label: string; fileId: string; name: string; page: number; unit: "page" | "section"; excerpt: string }
   | { kind: "statute"; label: string; title: string; act?: string; section?: string; source?: string };
 
-export type ArtifactKind = "legal_paper" | "text" | "markdown" | "pdf" | "docx" | "contract";
+export type ArtifactKind = "legal_paper" | "text" | "markdown" | "pdf" | "docx" | "contract" | "plan";
 
 export type DocumentArtifact = {
   id: string;

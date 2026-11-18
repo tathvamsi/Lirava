@@ -6,6 +6,7 @@ import {
   FileText,
   Maximize2,
   Minimize2,
+  ListChecks,
   Scale,
   X,
   ChevronDown,
@@ -13,6 +14,8 @@ import {
 } from "lucide-react";
 import { addArtifactLocally, setActiveArtifact, setBoardWidthPreference, useStore } from "@/lib/store";
 import { DocumentPreview } from "./DocumentPreview";
+import { DocumentEditor } from "./DocumentEditor";
+import { PlanView } from "./PlanView";
 
 export function ArtifactBoard({
   conversationId,
@@ -151,7 +154,8 @@ export function ArtifactBoard({
   };
 
   const isLegal = current.kind === "legal_paper" || current.kind === "contract";
-  const Icon = isLegal ? Scale : FileText;
+  const Icon = current.kind === "plan" ? ListChecks : isLegal ? Scale : FileText;
+  const kindLabel = current.kind === "plan" ? "plan" : isLegal ? "document · editable" : current.kind.replace("_", " ");
 
   return (
     <div
@@ -251,7 +255,7 @@ export function ArtifactBoard({
               </h3>
             )}
             <div className="flex items-center gap-1.5 text-[11px] text-foreground/45">
-              <span>{current.kind.replace("_", " ")}</span>
+              <span>{kindLabel}</span>
               <span aria-hidden>/</span>
               <span>{new Date(current.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
             </div>
@@ -261,27 +265,33 @@ export function ArtifactBoard({
         {/* Action Controls */}
         <div className="flex shrink-0 items-center gap-1">
           {/* Download dropdown or direct download buttons */}
-          {current.pdfFileId && (
-            <a
-              href={`/api/files/${current.pdfFileId}?download=1`}
-              download
-              className="btn-secondary h-8 px-2 sm:px-2.5 text-[12px] inline-flex items-center gap-1.5 shrink-0"
-              title="Download PDF"
-            >
+          {/* The export is made from the current text, so it always includes the user's latest edits. */}
+          {(isLegal || current.kind === "plan") && (
+            <>
+              <a
+                href={`/api/artifacts/${encodeURIComponent(current.id)}/export?format=pdf`}
+                download
+                className="btn-secondary h-8 px-2 sm:px-2.5 text-[12px] inline-flex items-center gap-1.5 shrink-0"
+                title="Download PDF"
+              >
+                <Download className="size-3.5" />
+                <span className="hidden md:inline">PDF</span>
+              </a>
+              <a
+                href={`/api/artifacts/${encodeURIComponent(current.id)}/export?format=docx`}
+                download
+                className="btn-secondary h-8 px-2 sm:px-2.5 text-[12px] inline-flex items-center gap-1.5 shrink-0"
+                title="Download Word (.docx)"
+              >
+                <Download className="size-3.5" />
+                <span className="hidden md:inline">Word</span>
+              </a>
+            </>
+          )}
+          {!isLegal && current.kind !== "plan" && current.pdfFileId && (
+            <a href={`/api/files/${current.pdfFileId}?download=1`} download className="btn-secondary h-8 px-2 sm:px-2.5 text-[12px] inline-flex items-center gap-1.5 shrink-0" title="Download PDF">
               <Download className="size-3.5" />
               <span className="hidden md:inline">PDF</span>
-            </a>
-          )}
-
-          {current.docxFileId && (
-            <a
-              href={`/api/files/${current.docxFileId}?download=1`}
-              download
-              className="btn-secondary h-8 px-2 sm:px-2.5 text-[12px] inline-flex items-center gap-1.5 shrink-0"
-              title="Download Word (.docx)"
-            >
-              <Download className="size-3.5" />
-              <span className="hidden md:inline">Word</span>
             </a>
           )}
 
@@ -320,8 +330,15 @@ export function ArtifactBoard({
       </header>
 
       {/* Main Document Content */}
+      {/* A plan opens as a plan, a notice or draft in the editor; anything else (a PDF, a file) is previewed. */}
       <div className="min-h-0 flex-1 overflow-hidden">
-        <DocumentPreview artifact={current} />
+        {current.kind === "plan" ? (
+          <PlanView key={current.id} artifact={current} />
+        ) : isLegal ? (
+          <DocumentEditor key={current.id} artifact={current} />
+        ) : (
+          <DocumentPreview artifact={current} />
+        )}
       </div>
     </div>
   );

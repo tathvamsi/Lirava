@@ -15,6 +15,7 @@ import {
   addArtifactLocally,
   addConversationLocally,
   addMessageLocally,
+  getState,
   mergeMessages,
   removeMessageLocally,
   renameConversationLocally,
@@ -26,6 +27,9 @@ import { ArtifactBoard, ArtifactCard } from "./artifacts";
 import { SourceList } from "./SourceList";
 import { SourcePanel } from "./chat/SourcePanel";
 import { WorkTrace, type TraceRow } from "./chat/WorkTrace";
+import { ClarifyCard } from "./chat/ClarifyCard";
+import { isAnswersMessage, parseClarify } from "@/lib/clarify";
+import { classifyOutput } from "@/lib/outputMode";
 import { detectLegalDocument } from "@/lib/artifacts/detector";
 import { parseToolCalls, toolIcon } from "@/lib/tool-calls";
 import { stripThinkingBlocks } from "@/lib/strip-thinking";
@@ -104,15 +108,28 @@ export default function Chat({ vakil, conversation, matterId, matterLabel }: { v
     // sending the same sentence twice on purpose shows both.
     return filtered;
   }, [all, convId, vakil.id]);
-  const activeArtifactId = useStore((s) => s.activeArtifactId);
+  const storeArtifacts = useStore((s) => s.artifacts);
+  const activeId = useStore((s) => s.activeArtifactId);
+  // The panel belongs to one chat: an artifact opened in another chat never shows here.
+  const activeArtifactId = activeId && storeArtifacts.find((a) => a.id === activeId)?.conversationId === convId ? activeId : null;
   // The source behind a citation opens beside the chat, in the same pane as documents.
-  const [openSource, setOpenSource] = useState<Citation | null>(null);
+  const [sourceState, setOpenSource] = useState<{ citation: Citation; convId: string | null } | null>(null);
+  const openSource = sourceState && sourceState.convId === convId ? sourceState.citation : null;
   const rightPane: "artifact" | "source" | null = activeArtifactId ? "artifact" : openSource ? "source" : null;
+  // Switching chats closes the previous chat's panel and opens the new chat's latest document or plan, if it has one.
+  useEffect(() => {
+    const latest = convId
+      ? getState().artifacts
+          .filter((a) => a.conversationId === convId && (a.kind === "plan" || a.kind === "legal_paper" || a.kind === "contract"))
+          .sort((a, b) => (b.updatedAt ?? b.createdAt ?? 0) - (a.updatedAt ?? a.createdAt ?? 0))[0]
+      : undefined;
+    setActiveArtifact(latest?.id ?? null);
+  }, [convId]);
   // Stable between renders, so rows that did not change are not re-rendered while an answer streams in.
   const openCitation = useCallback((citation: Citation) => {
     setActiveArtifact(null);
-    setOpenSource(citation);
-  }, []);
+    setOpenSource({ citation, convId });
+  }, [convId]);
   const hasKey = useStore((s) => s.computer.hasKey || s.computer.openRouter !== null || s.computer.nvidia !== null || s.computer.groq !== null || s.computer.antigravity !== null);
   const [, start] = useTransition();
   const [submitting, setSubmitting] = useState(false);
@@ -399,6 +416,10 @@ export default function Chat({ vakil, conversation, matterId, matterLabel }: { v
                             isStreaming={isLastReply && working}
                             onOpenSource={openCitation}
                             onRegenerate={isLastReply && !working ? regenerate : undefined}
+                            requestText={m.role === "vakil" ? requestBefore(shown, i) : null}
+                            answeredText={m.role === "vakil" ? (shown.slice(i + 1).find((n) => n.role === "user")?.text ?? null) : null}
+                            onClarify={m.role === "vakil" && !shown.slice(i + 1).some((n) => n.role === "user") ? (t) => send(t) : undefined}
+                            clarifyDisabled={working}
                           />
                         </div>
                       );
@@ -760,6 +781,14 @@ const ACTIVITY_ICON: [RegExp, typeof Globe][] = [
  * One chat line. In channels, `showName` labels which vakil wrote it. Memoized: while an answer streams in, only the
  * line being written changes, so every earlier line (and its Markdown) is left alone instead of re-rendered per chunk.
  */
+/** What the user asked for in the message a reply answers; an answer to a question card stands for the request it answered. */
+function requestBefore(list: Message[], index: number): string | null {
+  for (let j = index - 1; j >= 0; j--) {
+    if (list[j].role === "user" && !isAnswersMessage(list[j].text)) return list[j].text;
+  }
+  return null;
+}
+
 export const MessageRow = memo(function MessageRow({
   m,
   vakil,
@@ -767,6 +796,10 @@ export const MessageRow = memo(function MessageRow({
   isStreaming = false,
   onOpenSource,
   onRegenerate,
+  requestText = null,
+  answeredText = null,
+  onClarify,
+  clarifyDisabled = false,
 }: {
   m: Message;
   vakil: Vakil;
@@ -774,12 +807,25 @@ export const MessageRow = memo(function MessageRow({
   isStreaming?: boolean;
   onOpenSource?: (citation: Citation) => void;
   onRegenerate?: () => void;
+  /** The user's reply to this message's question card, if they have already answered it. */
+  /** The request this reply answers, so a plan or document can be shown as such while it is still being written. */
+  requestText?: string | null;
+  answeredText?: string | null;
+  /** Sends the answers to the question card. */
+  onClarify?: (text: string) => void;
+  clarifyDisabled?: boolean;
 }) {
   const artifacts = useStore((s) => s.artifacts);
 
   // Reasoning markup is presentation-only: keep the raw message in the store,
   // but do not let hidden content reach any user-facing assistant UI.
-  const visibleText = m.role === "vakil" ? stripThinkingBlocks(m.text) : m.text;
+  const stripped = m.role === "vakil" ? stripThinkingBlocks(m.text) : m.text;
+  // A question card the agent wrote is lifted out of the text and shown as an interactive card.
+  const clarify = useMemo(
+    () => (m.role === "vakil" ? parseClarify(stripped) : { prose: stripped, questions: null, pending: false }),
+    [m.role, stripped],
+  );
+  const visibleText = clarify.prose;
 
   // Raw `TOOL <name> {json}` dumps arrive as plain text — pull them out and
   // render as quiet chips so the answer reads as prose, not a stack trace.
@@ -869,8 +915,15 @@ export const MessageRow = memo(function MessageRow({
   // ── Approval / question card ─────────────────────────────────────────────
 
   // ── Vakil reply (left-aligned, no bubble — Claude style) ──────────────────
+  // A plan or document the agent wrote for this reply is saved as an artifact that remembers the message it came
+  // from. The chat then shows it as a card; the text itself lives in the plan view or the document editor.
+  const producedArtifact = m.role === "vakil" ? artifacts.find((a) => (a.metadata as { messageId?: string } | null)?.messageId === m.id) : undefined;
+  const expectedMode = m.role === "vakil" && !clarify.questions ? classifyOutput(requestText) : null;
+  const writingOutput = !producedArtifact && expectedMode !== null && isStreaming;
+
   const matchedArtifactId =
     m.artifactId ||
+    producedArtifact?.id ||
     artifacts.find((a) =>
       m.attachments?.some((att) => att.id === a.fileId || att.id === a.pdfFileId || att.id === a.docxFileId),
     )?.id;
@@ -883,7 +936,7 @@ export const MessageRow = memo(function MessageRow({
     (att) => !artifactObj || (att.id !== artifactObj.fileId && att.id !== artifactObj.pdfFileId && att.id !== artifactObj.docxFileId),
   ) ?? [];
 
-  const hasProse = prose.replace(/[…\s]/g, "") !== "";
+  const hasProse = prose.replace(/[…\s]/g, "") !== "" && !producedArtifact && !writingOutput;
 
   return (
     <div className="animate-message-rise">
@@ -933,13 +986,33 @@ export const MessageRow = memo(function MessageRow({
             )}
           </div>
         )}
-        {!hasProse && !tools.length && !m.text && (
+        {writingOutput && (
+          <p className="flex items-center gap-2 text-[14px] text-foreground/70" role="status">
+            <span className="live-dot" aria-hidden="true" />
+            {expectedMode === "plan" ? "Writing your plan…" : "Drafting your document…"}
+          </p>
+        )}
+        {!hasProse && !tools.length && !m.text && !writingOutput && (
           <div className="dot-prose">
             <Markdown remarkPlugins={[remarkGfm]}>…</Markdown>
             {isStreaming && (
               <span className="ml-1 inline-block h-3.5 w-1.5 rounded-xs bg-brand animate-pulse align-middle" />
             )}
           </div>
+        )}
+
+        {clarify.questions && (
+          <ClarifyCard
+            questions={clarify.questions}
+            answeredText={answeredText}
+            disabled={clarifyDisabled || !onClarify}
+            onSubmit={(t) => onClarify?.(t)}
+          />
+        )}
+        {clarify.pending && (
+          <p className="mt-2 flex items-center gap-2 text-[13px] text-foreground/60" role="status">
+            <span className="live-dot" aria-hidden="true" /> Lirava is preparing a few questions…
+          </p>
         )}
 
         {matchedArtifactId ? (

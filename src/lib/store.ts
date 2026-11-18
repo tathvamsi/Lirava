@@ -102,6 +102,11 @@ export function addArtifactLocally(artifact: DocumentArtifact) {
   });
 }
 
+/** Keeps an edited copy in the list without opening or switching the panel (a save finishing after it was closed). */
+export function updateArtifactLocally(artifact: DocumentArtifact) {
+  set({ artifacts: upsert(state.artifacts, artifact) });
+}
+
 export function deleteConversationLocally(id: string) {
   set({
     conversations: without(state.conversations, id),

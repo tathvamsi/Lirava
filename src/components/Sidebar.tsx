@@ -10,6 +10,7 @@ import { deleteConversationLocally, getState, markRead, renameConversationLocall
 import { setSidebarCollapsed, setSidebarOpen, toggleSidebar, useSidebarCollapsed, useSidebarOpen } from "@/lib/ui";
 import { timeAgo } from "@/lib/status";
 import { stripThinkingBlocks } from "@/lib/strip-thinking";
+import { parseClarify } from "@/lib/clarify";
 import type { Conversation, Matter, Message } from "@/lib/types";
 import { LiravaLogo } from "@/components/brand/LiravaLogo";
 
@@ -24,7 +25,9 @@ function preview(messages: Message[], convId: string): string {
     if (m.conversationId !== convId) continue;
     if (m.role === "card" && m.card?.status === "pending") return `Needs you: ${m.card.title}`;
     if (m.role === "vakil") {
-      const text = stripThinkingBlocks(m.text).trim();
+      const card = parseClarify(stripThinkingBlocks(m.text));
+      const text = card.prose.trim();
+      if (card.questions || card.pending) return "Needs your answer";
       if (text) return text.replace(/[#*_`>|[\]]/g, "").replace(/\s+/g, " ");
       continue;
     }
