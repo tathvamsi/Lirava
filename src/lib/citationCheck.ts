@@ -24,6 +24,7 @@ export function describeVerdict(v: CiteVerdict): VerdictView {
     case "partial": {
       const fallback: Record<string, VerdictView> = {
         title_mismatch: { tone: "look", label: "Name doesn’t match", meaning: "The citation is real, but it belongs to a different case than the name written beside it." },
+        equivalence_mismatch: { tone: "look", label: "Not the same provision", meaning: "The text says this is the same provision as the section before it, but the two are different." },
         ambiguous: { tone: "look", label: "More than one match", meaning: "Two records share this citation, so it cannot be tied to a single case." },
         quote_not_found: { tone: "look", label: "Quote not found", meaning: "The case is in the library, but these words were not found in it." },
         para_out_of_range: { tone: "look", label: "Paragraph not found", meaning: "The case is in the library, but it has no such paragraph." },

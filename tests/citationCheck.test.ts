@@ -20,7 +20,7 @@ test("a statute says the section was found, and a quote check says the words wer
 });
 
 test("every way a citation can be partly wrong is flagged for a look, with the checker's own warning when it gave one", () => {
-  for (const reason of ["title_mismatch", "ambiguous", "quote_not_found", "para_out_of_range", "no_text"] as const) {
+  for (const reason of ["title_mismatch", "equivalence_mismatch", "ambiguous", "quote_not_found", "para_out_of_range", "no_text"] as const) {
     const v = describeVerdict(verdict({ status: "partial", reason }));
     assert.equal(v.tone, "look", reason);
     assert.ok(v.meaning.length > 20, reason);
@@ -43,6 +43,7 @@ test("every verdict has a written label, so no meaning rests on colour alone", (
   const all: Array<Pick<CiteVerdict, "status" | "reason">> = [
     { status: "verified", reason: "ok" },
     { status: "partial", reason: "title_mismatch" },
+    { status: "partial", reason: "equivalence_mismatch" },
     { status: "partial", reason: "ambiguous" },
     { status: "partial", reason: "quote_not_found" },
     { status: "partial", reason: "para_out_of_range" },

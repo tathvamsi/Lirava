@@ -180,7 +180,7 @@ export type Preferences = { lastRead?: Record<string, number>; artifactBoardWidt
  * the case supports the point it is cited for.
  */
 export type CiteStatus = "verified" | "partial" | "unverified";
-export type CiteReason = "ok" | "not_in_library" | "not_covered" | "ambiguous" | "title_mismatch" | "quote_not_found" | "para_out_of_range" | "no_text";
+export type CiteReason = "ok" | "not_in_library" | "not_covered" | "equivalence_mismatch" | "ambiguous" | "title_mismatch" | "quote_not_found" | "para_out_of_range" | "no_text";
 export type CiteVerdict = {
   raw: string;
   span: [number, number];
