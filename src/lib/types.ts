@@ -168,8 +168,34 @@ export type PasswordEntry = { id: string; site: string; username: string; create
 
 export type RunPhase = "queued" | "running";
 
-/** Per-user settings kept in PostgreSQL: when each Vakil was last read, and the document preview width. */
-export type Preferences = { lastRead?: Record<string, number>; artifactBoardWidth?: number };
+/** Languages a document can be written in. The codes are the API's. */
+export type DocumentLanguage = "en" | "hi" | "kn" | "ta" | "te" | "mr";
+
+/** Per-user settings kept in PostgreSQL: when each Vakil was last read, the document preview width, and the document language. */
+export type Preferences = { lastRead?: Record<string, number>; artifactBoardWidth?: number; documentLanguage?: DocumentLanguage };
+
+/**
+ * What the citation checker found for one citation in an answer. Mirrors the API's CiteVerdict
+ * (lirava-api/src/services/library/types.ts). "verified" means the citation matches a record in the library; it does not mean
+ * the case supports the point it is cited for.
+ */
+export type CiteStatus = "verified" | "partial" | "unverified";
+export type CiteReason = "ok" | "not_in_library" | "not_covered" | "ambiguous" | "title_mismatch" | "quote_not_found" | "para_out_of_range" | "no_text";
+export type CiteVerdict = {
+  raw: string;
+  span: [number, number];
+  kind: "reporter" | "neutral" | "statute" | "para";
+  status: CiteStatus;
+  reason: CiteReason;
+  level?: "citation" | "quote";
+  library_title?: string;
+  library_citation?: string;
+  source_url?: string | null;
+  warning?: string;
+  /** Official translations of the judgment (language codes other than English). */
+  translations?: string[];
+};
+export type CitationCheck = { messageId: string; verdicts: CiteVerdict[]; counts: Record<CiteStatus, number> };
 
 export type Snapshot = {
   /** Chats with an answer being written (or waiting for a free slot) right now. */
@@ -241,4 +267,5 @@ export type ServerEvent =
   | { type: "channel"; data: Channel }
   | { type: "channel_deleted"; id: string }
   | { type: "conversation"; data: Conversation }
-  | { type: "conversation_deleted"; id: string };
+  | { type: "conversation_deleted"; id: string }
+  | { type: "citation_check"; data: CitationCheck };

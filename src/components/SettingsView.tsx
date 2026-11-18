@@ -2,8 +2,11 @@
 
 import Link from "next/link";
 import { useEffect, useState, useSyncExternalStore } from "react";
-import { Bell, Plug } from "lucide-react";
+import { Bell, Languages, Plug } from "lucide-react";
 import { LogoutButton } from "@/components/auth/logout-button";
+import { DOCUMENT_LANGUAGES } from "@/lib/citationCheck";
+import { setDocumentLanguage, useStore } from "@/lib/store";
+import type { DocumentLanguage } from "@/lib/types";
 import { PageHeader, Section } from "./SettingsKit";
 
 type Account = { name: string; email: string; role: string };
@@ -15,6 +18,7 @@ export default function SettingsView() {
   const permission = useSyncExternalStore(noop, notificationPermission, () => "default");
   const [, force] = useState(0);
   const [account, setAccount] = useState<Account | null>(null);
+  const documentLanguage = useStore((s) => s.documentLanguage);
 
   useEffect(() => {
     let active = true;
@@ -43,6 +47,29 @@ export default function SettingsView() {
             {account?.role === "admin" && <span className="rounded-full bg-highlight px-2.5 py-1 text-[11px]">Administrator</span>}
             <LogoutButton />
           </div>
+        </Section>
+
+        <Section eyebrow="Documents" title="Language for documents" description="The language petitions, notices, replies and other documents are written in. Leave it on “Ask me each time” and the assistant asks before it starts writing.">
+          <div className="surface flex flex-wrap items-center gap-3 p-4">
+            <Languages className="size-4 shrink-0 text-foreground/50" strokeWidth={1.5} aria-hidden />
+            <label htmlFor="document-language" className="flex-1 text-body-sm">
+              Write documents in
+            </label>
+            <select
+              id="document-language"
+              value={documentLanguage ?? ""}
+              onChange={(e) => setDocumentLanguage(e.target.value ? (e.target.value as DocumentLanguage) : null)}
+              className="h-9 min-w-[10rem] rounded-lg border border-border bg-card px-3 text-[13px]"
+            >
+              <option value="">Ask me each time</option>
+              {DOCUMENT_LANGUAGES.map((l) => (
+                <option key={l.code} value={l.code}>
+                  {l.native === l.name ? l.name : `${l.name} (${l.native})`}
+                </option>
+              ))}
+            </select>
+          </div>
+          <p className="mt-2 text-[12px] text-muted">Case citations and section numbers stay in their checkable form (for example “2023 INSC 1043” or “Section 103 BNS”), whatever the language.</p>
         </Section>
 
         <Section eyebrow="Apps" title="Connectors" description="Connect email, calendars and document storage privately to your account.">

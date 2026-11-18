@@ -1,7 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import type { Conversation, DocumentArtifact, Message, ServerEvent, Snapshot } from "./types";
+import type { CitationCheck, Conversation, DocumentArtifact, DocumentLanguage, Message, ServerEvent, Snapshot } from "./types";
 
 // One client-side store fed by the server's event stream. Components read it with
 // useSyncExternalStore; the EventSource opens on first subscription. No effects needed.
@@ -19,6 +19,10 @@ export type State = Snapshot & {
   running: Record<string, "queued" | "running">;
   /** Saved width of the document preview beside a chat (pixels), or null for the default. */
   boardWidth: number | null;
+  /** What the citation checker found in each answer, by message id. Live only: the API does not keep verdicts, so a reload clears them. */
+  citationChecks: Record<string, CitationCheck>;
+  /** The language the person wants documents written in, or null when they have not chosen (the assistant then asks). */
+  documentLanguage: DocumentLanguage | null;
 };
 
 const EMPTY: State = {
@@ -31,6 +35,8 @@ const EMPTY: State = {
   activeArtifactId: null,
   running: {},
   boardWidth: null,
+  citationChecks: {},
+  documentLanguage: null,
 };
 
 let state: State = EMPTY;
@@ -85,6 +91,12 @@ export function markRead(vakilId: string) {
 export function setBoardWidthPreference(width: number) {
   set({ boardWidth: width });
   savePreference("artifactBoardWidth", width);
+}
+
+/** Saves the language documents are written in (null clears it, so the assistant asks again). */
+export function setDocumentLanguage(language: DocumentLanguage | null) {
+  set({ documentLanguage: language });
+  savePreference("documentLanguage", language);
 }
 
 export function dismissToast(id: number) {
@@ -149,6 +161,7 @@ function apply(ev: ServerEvent) {
         ...ev.data,
         running: ev.data.running ?? {},
         boardWidth: ev.data.preferences?.artifactBoardWidth ?? null,
+        documentLanguage: ev.data.preferences?.documentLanguage ?? null,
         loaded: true,
         connected: true,
         lastRead,
@@ -224,6 +237,8 @@ function apply(ev: ServerEvent) {
       return set({ conversations: without(state.conversations, ev.id), messages: state.messages.filter((m) => m.conversationId !== ev.id) });
     case "channel_deleted":
       return set({ channels: without(state.channels, ev.id), messages: state.messages.filter((m) => m.channelId !== ev.id) });
+    case "citation_check":
+      return set({ citationChecks: { ...state.citationChecks, [ev.data.messageId]: ev.data } });
   }
 }
 

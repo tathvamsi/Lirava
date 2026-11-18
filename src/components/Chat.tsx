@@ -25,6 +25,7 @@ import {
 } from "@/lib/store";
 import { ArtifactBoard, ArtifactCard } from "./artifacts";
 import { SourceList } from "./SourceList";
+import { CitationCheck } from "./chat/CitationCheck";
 import { SourcePanel } from "./chat/SourcePanel";
 import { WorkTrace, type TraceRow } from "./chat/WorkTrace";
 import { ClarifyCard } from "./chat/ClarifyCard";
@@ -1024,6 +1025,8 @@ export const MessageRow = memo(function MessageRow({
         {!!nonArtifactAttachments.length && <Attachments items={nonArtifactAttachments} />}
 
         {!isStreaming && !!m.citations?.length && <SourceList citations={m.citations} onOpen={onOpenSource} />}
+
+        {!isStreaming && <CitationCheck messageId={m.id} />}
 
         {/* Message action icons below the document card (Claude style) */}
         <MessageActions text={visibleText} onRegenerate={onRegenerate} />
