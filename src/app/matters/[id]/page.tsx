@@ -24,6 +24,7 @@ import {
 } from "@/app/actions";
 import type { Conversation, Matter, MatterEvent } from "@/lib/types";
 import CaseFile from "@/components/matters/CaseFile";
+import KnowledgePicker from "@/components/knowledge/KnowledgePicker";
 import {
   deleteConversationLocally,
   updateConversationFlagsLocally,
@@ -220,15 +221,18 @@ export default function MatterWorkspace({
             {matter.court || "Court not recorded"}
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => void newChat()}
-          disabled={!firstVakil || creating}
-          className="btn-primary inline-flex h-10 items-center justify-center gap-2 px-4 text-[13px]"
-        >
-          <Plus className="size-4" />
-          {creating ? "Creating…" : "New chat"}
-        </button>
+        <div className="flex items-center gap-3">
+          <KnowledgePicker scope="matter" id={matterId} placement="down" />
+          <button
+            type="button"
+            onClick={() => void newChat()}
+            disabled={!firstVakil || creating}
+            className="btn-primary inline-flex h-10 items-center justify-center gap-2 px-4 text-[13px]"
+          >
+            <Plus className="size-4" />
+            {creating ? "Creating…" : "New chat"}
+          </button>
+        </div>
       </div>
       {justHanded && (
         <p role="status" className="mt-6 rounded-xl bg-highlight px-4 py-3 text-[14px] text-foreground/85">

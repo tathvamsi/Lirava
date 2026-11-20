@@ -3,16 +3,23 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, useTransition, type ReactNode } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Archive, ArchiveRestore, Boxes, ChevronRight, Folder,ChevronsUpDown, Ellipsis, FolderKanban, Globe, Keyboard, LayoutGrid, LogOut, Palette, PanelLeftClose, Pencil, Pin, PinOff, Scale, Search, Settings, ShieldCheck, SquarePen, Trash2, Upload, X } from "lucide-react";
+import { Archive, ArchiveRestore, BookOpen, Boxes, NotebookPen, ChevronRight, Folder,ChevronsUpDown, Ellipsis, FolderKanban, Globe, Keyboard, LayoutGrid, LogOut, PanelLeftClose, Pencil, Pin, PinOff, Scale, Search, Settings, ShieldCheck, SquarePen, Trash2, Upload, X } from "lucide-react";
 import { backfillConversationTitles, setConversationFlags, deleteConversation, listMatters, moveConversationToMatter, renameConversation } from "@/app/actions";
 import { LogoutButton } from "@/components/auth/logout-button";
 import { deleteConversationLocally, getState, markRead, renameConversationLocally, updateConversationFlagsLocally, updateConversationMatterLocally, useStore } from "@/lib/store";
+import { openSettings } from "@/lib/settings-modal";
 import { setSidebarCollapsed, setSidebarOpen, toggleSidebar, useSidebarCollapsed, useSidebarOpen } from "@/lib/ui";
 import { timeAgo } from "@/lib/status";
+import { groupByTime } from "@/lib/time-groups";
 import { stripThinkingBlocks } from "@/lib/strip-thinking";
 import { parseClarify } from "@/lib/clarify";
 import type { Conversation, Matter, Message } from "@/lib/types";
 import { LiravaLogo } from "@/components/brand/LiravaLogo";
+
+/** One compact row of the account menu, sized like Open WebUI's user menu. */
+const USER_MENU_ROW = "flex h-[27px] w-full items-center gap-2 rounded-xl px-2 text-left text-[13px] text-foreground/90 transition-colors hover:bg-highlight hover:text-foreground disabled:opacity-40";
+/** Where the admin app is hosted. The "Admin Panel" row only appears for administrators when this is set. */
+const ADMIN_URL = process.env.NEXT_PUBLIC_ADMIN_URL || "";
 
 export function Wordmark({ className = "" }: { className?: string }) {
   return <LiravaLogo className={className} />;
@@ -58,6 +65,7 @@ export default function Sidebar() {
   const [draft, setDraft] = useState("");
   const [sharedId, setSharedId] = useState<string | null>(null);
   const [showArchived, setShowArchived] = useState(false);
+  const [pinnedOpen, setPinnedOpen] = useState(true);
   const [profileOpen, setProfileOpen] = useState(false);
   const [user, setUser] = useState<{ name: string; email: string; role: string } | null>(null);
   const [matters, setMatters] = useState<Matter[]>([]);
@@ -201,6 +209,13 @@ export default function Sidebar() {
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
+
+  /** Every account-menu item opens the settings dialog on its tab, over the current page. */
+  const openFromMenu = (tab: string) => {
+    setProfileOpen(false);
+    if (typeof window !== "undefined" && window.innerWidth < 768) setSidebarOpen(false);
+    openSettings(tab);
+  };
 
   const dotById = useMemo(() => new Map(vakils.map((d) => [d.id, d])), [vakils]);
 
@@ -504,7 +519,20 @@ export default function Sidebar() {
               <Boxes className="size-4" strokeWidth={1.75} />
               Artifacts
             </Link>
-          </nav>
+            <Link
+              href="/knowledge"
+              className={`flex h-9 items-center gap-3 rounded-lg px-2.5 text-[14px] transition-colors ${pathname.startsWith("/knowledge") ? "bg-highlight text-foreground" : "text-foreground/80 hover:bg-highlight hover:text-foreground"}`}
+            >
+              <BookOpen className="size-4" strokeWidth={1.75} />
+              Knowledge
+            </Link>
+            <Link
+              href="/notes"
+              className={`flex h-9 items-center gap-3 rounded-lg px-2.5 text-[14px] transition-colors ${pathname.startsWith("/notes") ? "bg-highlight text-foreground" : "text-foreground/80 hover:bg-highlight hover:text-foreground"}`}
+            >
+              <NotebookPen className="size-4" strokeWidth={1.75} />
+              Notes
+            </Link>          </nav>
 
           {!q && matters.length > 0 && (
             <section className="mb-5 px-2">
@@ -544,10 +572,34 @@ export default function Sidebar() {
 
           {/* Recent chats */}
           {q && <div className="eyebrow shrink-0 px-4 pt-2 pb-1.5">Chats matching “{q}”</div>}
-          {!q && <div className="px-4 pb-1.5 text-[12px] font-medium text-foreground/60">Chats</div>}
           <nav className="min-h-0 flex-1 overflow-y-auto px-2 pb-2">
             {!loaded && <div className="px-2 py-2 text-body-sm text-foreground/45">Connecting…</div>}
-            {recent.map((c) => renderChat(c))}
+            {q
+              ? recent.map((c) => renderChat(c))
+              : (() => {
+                  const pinned = recent.filter((c) => pinnedIds.includes(c.id));
+                  const rest = recent.filter((c) => !pinnedIds.includes(c.id));
+                  const heading = "px-2.5 pt-3 pb-1 text-[12px] font-medium text-foreground/50";
+                  return (
+                    <>
+                      {pinned.length > 0 && (
+                        <section aria-label="Pinned chats">
+                          <button type="button" onClick={() => setPinnedOpen((v) => !v)} aria-expanded={pinnedOpen} className={`${heading} flex w-full items-center gap-1 pt-1 text-left hover:text-foreground`}>
+                            <ChevronRight className={`size-3 transition-transform ${pinnedOpen ? "rotate-90" : ""}`} strokeWidth={2} />
+                            Pinned
+                          </button>
+                          {pinnedOpen && pinned.map((c) => renderChat(c))}
+                        </section>
+                      )}
+                      {groupByTime(rest).map((group) => (
+                        <section key={group.label} aria-label={group.label}>
+                          <div className={heading}>{group.label}</div>
+                          {group.items.map((c) => renderChat(c))}
+                        </section>
+                      ))}
+                    </>
+                  );
+                })()}
             {loaded && !recent.length && (
               <p className="px-3 py-6 text-center text-caption text-foreground/45">
                 {q ? "No chats match." : "No chats yet. Start a new chat to begin."}
@@ -579,24 +631,52 @@ export default function Sidebar() {
 
           <div ref={profileRef} className="relative shrink-0 border-t border-border p-2">
             {profileOpen && (
-              <div role="menu" aria-label="Account menu" className="absolute right-2 bottom-[68px] z-50 w-[264px] overflow-hidden rounded-xl border border-border bg-background py-2 text-foreground shadow-elevated animate-page-rise">
-                <div className="px-3 py-2.5">
-                  <p className="truncate text-[13px] font-medium">{displayName}</p>
-                  <p className="truncate pt-0.5 text-[12px] text-foreground/55">{user?.email || "Signed in to Lirava"}</p>
-                </div>
-                <div className="mx-3 my-1 h-px bg-highlight" />
-                <Link role="menuitem" href="/settings" onClick={() => setProfileOpen(false)} className="flex items-center gap-3 px-3 py-2 text-[14px] hover:bg-highlight"><Settings className="size-4" />Settings</Link>
-                <div role="menuitem" aria-disabled="true" className="flex items-center gap-3 px-3 py-2 text-[14px] text-foreground/60"><Palette className="size-4" />Appearance <span className="ml-auto text-[12px]">Light</span></div>
-                <div role="menuitem" aria-disabled="true" className="flex items-center gap-3 px-3 py-2 text-[14px] text-foreground/60"><Globe className="size-4" />Language <span className="ml-auto text-[12px]">English</span></div>
-                <div role="menuitem" aria-disabled="true" className="flex items-center gap-3 px-3 py-2 text-[14px] text-foreground/60"><Keyboard className="size-4" />Keyboard shortcuts</div>
-                <Link role="menuitem" href="/privacy" onClick={() => setProfileOpen(false)} className="flex items-center gap-3 px-3 py-2 text-[14px] hover:bg-highlight"><ShieldCheck className="size-4" />Privacy</Link>
-                <div className="mx-3 my-1 h-px bg-highlight" />
-                <LogoutButton className="flex w-full items-center gap-3 px-3 py-2 text-[14px] text-foreground/80 transition-colors hover:bg-highlight hover:text-foreground disabled:opacity-40" icon={<LogOut className="size-4" />} />
+              <div role="menu" aria-label="Account menu" className="absolute right-2 bottom-full left-2 z-50 mb-1 rounded-2xl border border-border bg-background p-1 text-foreground shadow-elevated animate-page-rise">
+                <button type="button" role="menuitem" onClick={() => openFromMenu("account")} className={USER_MENU_ROW} title="Account settings">
+                  <span className="flex size-[18px] shrink-0 items-center justify-center rounded-full bg-highlight text-[9px] font-semibold">{initials}</span>
+                  <span className="min-w-0 flex-1 truncate">{displayName}</span>
+                </button>
+
+                <hr className="mx-1 my-0.5 border-border/60" />
+
+                <button type="button" role="menuitem" onClick={() => openFromMenu("knowledge")} className={USER_MENU_ROW}>
+                  <BookOpen className="size-3.5 shrink-0" strokeWidth={1.5} />
+                  <span className="truncate">Knowledge</span>
+                </button>
+                <button type="button" role="menuitem" onClick={() => openFromMenu("notes")} className={USER_MENU_ROW}>
+                  <NotebookPen className="size-3.5 shrink-0" strokeWidth={1.5} />
+                  <span className="truncate">Notes</span>
+                </button>
+
+                <hr className="mx-1 my-0.5 border-border/60" />
+
+                <button type="button" role="menuitem" onClick={() => openFromMenu("shortcuts")} className={USER_MENU_ROW}>
+                  <Keyboard className="size-3.5 shrink-0" strokeWidth={1.5} />
+                  <span className="truncate">Keyboard shortcuts</span>
+                </button>
+                <button type="button" role="menuitem" onClick={() => openFromMenu("privacy")} className={USER_MENU_ROW}>
+                  <ShieldCheck className="size-3.5 shrink-0" strokeWidth={1.5} />
+                  <span className="truncate">Privacy</span>
+                </button>
+
+                <hr className="mx-1 my-0.5 border-border/60" />
+
+                {user?.role === "admin" && ADMIN_URL && (
+                  <a role="menuitem" href={ADMIN_URL} target="_blank" rel="noreferrer" onClick={() => setProfileOpen(false)} className={USER_MENU_ROW}>
+                    <ShieldCheck className="size-3.5 shrink-0" strokeWidth={1.5} />
+                    <span className="truncate">Admin Panel</span>
+                  </a>
+                )}
+                <button type="button" role="menuitem" onClick={() => openFromMenu("general")} className={USER_MENU_ROW}>
+                  <Settings className="size-3.5 shrink-0" strokeWidth={1.5} />
+                  <span className="truncate">Settings</span>
+                </button>
+                <LogoutButton className={USER_MENU_ROW} menuItem label="Sign out" icon={<LogOut className="size-3.5 shrink-0" strokeWidth={1.5} />} />
               </div>
             )}
             <button type="button" aria-haspopup="menu" aria-expanded={profileOpen} onClick={() => setProfileOpen((open) => !open)} className="flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-left transition-colors hover:bg-highlight">
               <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-highlight text-[11px] font-semibold">{initials}</span>
-              <span className="min-w-0 flex-1"><span className="block truncate text-[13px] font-medium">{displayName}</span><span className="block truncate text-[11px] text-foreground/50">{user?.role || "Account"}</span></span>
+              <span className="min-w-0 flex-1 truncate text-[13px] font-medium">{displayName}</span>
               <ChevronsUpDown className="size-4 text-foreground/55" />
             </button>
           </div>

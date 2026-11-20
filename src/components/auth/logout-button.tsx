@@ -6,9 +6,15 @@ import { resetStore } from "@/lib/store";
 export function LogoutButton({
   className,
   icon,
+  label,
+  menuItem = false,
 }: {
   className?: string;
   icon?: ReactNode;
+  /** Marks the button as an item of a role="menu" popup, so keyboard and screen-reader menu navigation includes it. */
+  menuItem?: boolean;
+  /** Text shown beside the icon. Without it, an icon alone is shown (as in compact icon buttons). */
+  label?: string;
 }) {
   const [pending, setPending] = useState(false);
 
@@ -30,13 +36,21 @@ export function LogoutButton({
   return (
     <button
       type="button"
+      role={menuItem ? "menuitem" : undefined}
       onClick={onClick}
       disabled={pending}
       className={className ?? "btn-quiet"}
       title="Log out"
       aria-label="Log out"
     >
-      {icon ?? (pending ? "Logging out..." : "Log out")}
+      {label ? (
+        <>
+          {icon}
+          <span className="truncate">{pending ? "Signing out…" : label}</span>
+        </>
+      ) : (
+        (icon ?? (pending ? "Logging out..." : "Log out"))
+      )}
     </button>
   );
 }

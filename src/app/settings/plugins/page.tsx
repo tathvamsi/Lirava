@@ -1,7 +1,12 @@
-import { redirect } from "next/navigation";
+import { Suspense } from "react";
+import OpenSettingsRedirect from "@/components/settings/OpenSettingsRedirect";
 
 export const metadata = { title: "Plugins · Lirava" };
 
 export default function PluginsPage() {
-  redirect("/");
+  return (
+    <Suspense>
+      <OpenSettingsRedirect tab="connections" />
+    </Suspense>
+  );
 }

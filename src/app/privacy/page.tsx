@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
 import { InformationPage } from "@/components/marketing/InformationPage";
+import { PrivacyContent } from "@/components/marketing/PrivacyContent";
 export const metadata: Metadata = { title: "Privacy | Lirava", description: "Placeholder privacy notice for Lirava." };
-export default function PrivacyPage() { return <InformationPage eyebrow="Privacy" title="Privacy notice"><p>This is a placeholder privacy notice. Before launch, replace it with a reviewed policy covering the data your deployment collects, why it is processed, how it is retained, and how people can exercise their rights.</p><h2>Workspace material</h2><p>Legal teams should only upload material they are authorised to process and should use workspace controls that match their confidentiality obligations.</p><h2>Contact</h2><p>For privacy questions, contact your Lirava administrator or the contact address published on the site.</p></InformationPage>; }
+export default function PrivacyPage() { return <InformationPage eyebrow="Privacy" title="Privacy notice"><PrivacyContent /></InformationPage>; }

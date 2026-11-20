@@ -1,7 +1,17 @@
-/** Two-column settings block: label + description on the left, controls on the right. */
+"use client";
+
+import { createContext, useContext } from "react";
+
+const StackedContext = createContext(false);
+
+/** Inside a narrow container (the settings dialog) sections stack instead of sitting in two columns. */
+export const StackedSections = StackedContext.Provider;
+
+/** Two-column settings block: label + description on the left, controls on the right. Stacked inside a <StackedSections value>. */
 export function Section({ id, eyebrow, title, description, children }: { id?: string; eyebrow?: string; title: string; description?: React.ReactNode; children: React.ReactNode }) {
+  const stacked = useContext(StackedContext);
   return (
-    <section id={id} className="grid gap-5 border-t border-black/[0.06] py-8 first:border-t-0 first:pt-2 md:grid-cols-[240px_1fr] md:gap-10">
+    <section id={id} className={`grid gap-4 border-t border-border/60 first:border-t-0 first:pt-2 ${stacked ? "py-6" : "py-8 md:grid-cols-[240px_1fr] md:gap-10"}`}>
       <div>
         {eyebrow && <div className="eyebrow mb-1.5">{eyebrow}</div>}
         <h2 className="text-[15px] leading-snug font-medium">{title}</h2>

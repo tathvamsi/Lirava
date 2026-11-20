@@ -1,17 +1,29 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowUp } from "lucide-react";
 import { startConversation } from "@/app/actions";
 import { markRead, useStore } from "@/lib/store";
-
 export default function Home() {
   const router = useRouter();
   const vakils = useStore((s) => s.vakils);
   const loaded = useStore((s) => s.loaded);
   const [text, setText] = useState("");
   const [pending, start] = useTransition();
+  const [firstName, setFirstName] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    fetch("/api/auth/me")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: { user?: { name?: string } } | null) => {
+        const name = d?.user?.name?.trim().split(/\s+/)[0];
+        if (active && name) setFirstName(name);
+      })
+      .catch(() => undefined);
+    return () => { active = false; };
+  }, []);
 
   if (loaded && !vakils.length) {
     return (
@@ -43,7 +55,7 @@ export default function Home() {
       <div className="animate-page-rise mx-auto max-w-[880px] px-4 sm:px-8">
         <section className="flex min-h-[calc(100dvh-56px)] -translate-y-10 flex-col items-center justify-center text-center">
           <h1 className="mb-9 font-serif text-[38px] font-semibold tracking-[-0.04em] text-foreground sm:text-[48px]">
-            Welcome back.
+            {firstName ? `Welcome back, ${firstName}.` : "Welcome back."}
           </h1>
           <div className="w-full max-w-[640px] text-left">
             <div className="composer-shell rounded-2xl bg-card px-4 pt-3 pb-2 transition-shadow">

@@ -29,7 +29,7 @@ import { CitationCheck } from "./chat/CitationCheck";
 import { SourcePanel } from "./chat/SourcePanel";
 import { WorkTrace, type TraceRow } from "./chat/WorkTrace";
 import { ClarifyCard } from "./chat/ClarifyCard";
-import { isAnswersMessage, parseClarify } from "@/lib/clarify";
+import KnowledgePicker from "./knowledge/KnowledgePicker";import { isAnswersMessage, parseClarify } from "@/lib/clarify";
 import { classifyOutput } from "@/lib/outputMode";
 import { detectLegalDocument } from "@/lib/artifacts/detector";
 import { parseToolCalls, toolIcon } from "@/lib/tool-calls";
@@ -462,7 +462,7 @@ export default function Chat({ vakil, conversation, matterId, matterLabel }: { v
             </div>
           )}
           <div className={COL}>
-            <Composer key={convId ?? "new"} vakil={vakil} onSend={send} onStop={stop} submitting={busy} draft={draft} context={matterLabel} />
+            <Composer key={convId ?? "new"} vakil={vakil} onSend={send} onStop={stop} submitting={busy} draft={draft} context={matterLabel} conversationId={convId} />
           </div>
         </div>}
       </div>
@@ -595,7 +595,7 @@ async function uploadFiles(vakilId: string, list: File[]): Promise<{ files?: Att
 }
 
 // ── Composer ─────────────────────────────────────────────────────────────────
-function Composer({ vakil, onSend, onStop, submitting = false, draft = null, context }: { vakil: Vakil; onSend: (text: string, attachments: Attachment[]) => void; onStop?: () => void; submitting?: boolean; draft?: { text: string; nonce: number } | null; context?: string }) {
+function Composer({ vakil, onSend, onStop, submitting = false, draft = null, context, conversationId = null }: { vakil: Vakil; onSend: (text: string, attachments: Attachment[]) => void; onStop?: () => void; submitting?: boolean; draft?: { text: string; nonce: number } | null; context?: string; conversationId?: string | null }) {
   const [text, setText] = useState("");
   const [uploads, setUploads] = useState<Upload[]>([]);
   const [dragging, setDragging] = useState(false);
@@ -700,6 +700,8 @@ function Composer({ vakil, onSend, onStop, submitting = false, draft = null, con
               <span className="truncate">{context}</span>
             </span>
           )}
+
+          {conversationId && <KnowledgePicker scope="conversation" id={conversationId} />}
 
           <div className="ml-auto flex items-center gap-1">
             {submitting && onStop ? (

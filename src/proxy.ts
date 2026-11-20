@@ -3,9 +3,9 @@ import type { NextRequest } from "next/server";
 import { SESSION_COOKIE_NAME, verifySessionToken } from "@/lib/auth/token";
 
 /** Pages that need a signed-in user. */
-const PROTECTED_PAGES = ["/vakil", "/new", "/matters", "/artifacts", "/settings", "/connections"];
+const PROTECTED_PAGES = ["/vakil", "/new", "/matters", "/artifacts", "/knowledge", "/notes", "/settings", "/connections"];
 /** API routes that need a signed-in user (each also checks the session itself, with the database). */
-const PROTECTED_API = ["/api/conversations", "/api/vakils", "/api/events", "/api/files", "/api/documents", "/api/preferences", "/api/legal", "/api/artifacts", "/api/agent", "/api/backend"];
+const PROTECTED_API = ["/api/conversations", "/api/vakils", "/api/events", "/api/files", "/api/documents", "/api/preferences", "/api/memories", "/api/knowledge-bases", "/api/notes", "/api/automations", "/api/integrations", "/api/auth/profile", "/api/auth/password", "/api/legal", "/api/artifacts", "/api/agent", "/api/backend"];
 const AUTH_PAGES = ["/login", "/signup"];
 
 const under = (pathname: string, prefixes: string[]) => prefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
@@ -46,6 +46,8 @@ export const config = {
     "/new/:path*",
     "/matters/:path*",
     "/artifacts/:path*",
+    "/knowledge/:path*",
+    "/notes/:path*",
     "/settings/:path*",
     "/connections/:path*",
     "/api/conversations/:path*",
@@ -54,6 +56,13 @@ export const config = {
     "/api/files/:path*",
     "/api/documents/:path*",
     "/api/preferences/:path*",
+    "/api/memories/:path*",
+    "/api/knowledge-bases/:path*",
+    "/api/notes/:path*",
+    "/api/automations/:path*",
+    "/api/integrations/:path*",
+    "/api/auth/profile",
+    "/api/auth/password",
     "/api/legal/:path*",
     "/api/artifacts/:path*",
     "/api/agent/:path*",

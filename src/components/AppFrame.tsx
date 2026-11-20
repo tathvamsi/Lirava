@@ -4,6 +4,7 @@ import { Suspense, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import Toasts from "@/components/Toasts";
+import SettingsModal from "@/components/settings/SettingsModal";
 import MobileBar, { FloatingSidebarTrigger } from "@/components/MobileBar";
 
 const AUTH_PATHS = new Set(["/login", "/signup", "/landing", "/security", "/survey", "/privacy", "/terms"]);
@@ -44,6 +45,7 @@ export default function AppFrame({
         {children}
       </main>
       <Toasts />
+      <SettingsModal />
     </>
   );
 }
