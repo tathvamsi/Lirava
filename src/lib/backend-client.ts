@@ -80,10 +80,12 @@ export async function sendVakilMessage(
   attachments?: Attachment[],
   /** Save the question and return at once; the answer arrives through the live stream. */
   background = false,
+  /** The model the user picked (custom, nvidia or sarvam). Left out, the server's default is used. */
+  provider?: string,
 ) {
   return backendFetch("/api/agent/message", {
     method: "POST",
-    body: JSON.stringify({ vakilId, text, userId, conversationId, messageId, attachments, background }),
+    body: JSON.stringify({ vakilId, text, userId, conversationId, messageId, attachments, background, provider }),
   });
 }
 

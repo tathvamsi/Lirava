@@ -15,6 +15,7 @@ import {
   addArtifactLocally,
   addConversationLocally,
   addMessageLocally,
+  deleteConversationLocally,
   getState,
   mergeMessages,
   removeMessageLocally,
@@ -29,7 +30,10 @@ import { CitationCheck } from "./chat/CitationCheck";
 import { SourcePanel } from "./chat/SourcePanel";
 import { WorkTrace, type TraceRow } from "./chat/WorkTrace";
 import { ClarifyCard } from "./chat/ClarifyCard";
-import KnowledgePicker from "./knowledge/KnowledgePicker";import { isAnswersMessage, parseClarify } from "@/lib/clarify";
+import KnowledgePicker from "./knowledge/KnowledgePicker";
+import ModelPicker from "./chat/ModelPicker";
+import { getSelectedProvider } from "@/lib/provider";
+import { isAnswersMessage, parseClarify } from "@/lib/clarify";
 import { classifyOutput } from "@/lib/outputMode";
 import { detectLegalDocument } from "@/lib/artifacts/detector";
 import { parseToolCalls, toolIcon } from "@/lib/tool-calls";
@@ -195,10 +199,25 @@ export default function Chat({ vakil, conversation, matterId, matterLabel }: { v
           | undefined;
 
         if (convId) {
-          result = await sendMessage(vakil.id, text, attachments, targetConvId, userMsgId);
+          try {
+            result = await sendMessage(vakil.id, text, attachments, targetConvId, userMsgId, getSelectedProvider());
+          } catch (sendErr) {
+            if (!/conversation not found/i.test(sendErr instanceof Error ? sendErr.message : "")) throw sendErr;
+            // The server no longer has this chat (it was deleted, or it belongs to another account). The page still showed it,
+            // so carry on in a new chat with the same question instead of failing.
+            const freshId = `conv_${Math.random().toString(36).slice(2, 10)}${Date.now().toString(36)}`;
+            const startRes = await startConversation(vakil.id, text, attachments, freshId, userMsgId, matterId, getSelectedProvider());
+            deleteConversationLocally(targetConvId);
+            addConversationLocally({ id: freshId, vakilId: vakil.id, title: autoTitle, userId: "", createdAt: Date.now(), updatedAt: Date.now() });
+            addMessageLocally({ ...userMsg, conversationId: freshId });
+            setActiveConvId(freshId);
+            router.replace(`/vakil/${vakil.id}?c=${freshId}`);
+            if (startRes?.assistantMessage) addMessageLocally({ ...startRes.assistantMessage, conversationId: freshId });
+            return;
+          }
         } else {
           const canonicalId = vakil.id;
-          const startRes = await startConversation(vakil.id, text, attachments, targetConvId, userMsgId, matterId);
+          const startRes = await startConversation(vakil.id, text, attachments, targetConvId, userMsgId, matterId, getSelectedProvider());
           result = startRes;
           router.replace(`/vakil/${canonicalId}?c=${targetConvId}`);
         }
@@ -700,6 +719,8 @@ function Composer({ vakil, onSend, onStop, submitting = false, draft = null, con
               <span className="truncate">{context}</span>
             </span>
           )}
+
+          <ModelPicker />
 
           {conversationId && <KnowledgePicker scope="conversation" id={conversationId} />}
 

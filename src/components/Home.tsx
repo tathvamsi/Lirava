@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowUp } from "lucide-react";
 import { startConversation } from "@/app/actions";
 import { markRead, useStore } from "@/lib/store";
+import { getSelectedProvider } from "@/lib/provider";
 export default function Home() {
   const router = useRouter();
   const vakils = useStore((s) => s.vakils);
@@ -42,7 +43,7 @@ export default function Home() {
     if (!value || !target) return;
     setText("");
     start(async () => {
-      const res = await startConversation(target.id, value);
+      const res = await startConversation(target.id, value, [], undefined, undefined, undefined, getSelectedProvider());
       markRead(target.id);
       const canonicalId = target.id;
       const convId = res?.conversationId || (typeof res === "string" ? res : "");

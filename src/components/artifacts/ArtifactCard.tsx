@@ -1,14 +1,30 @@
 "use client";
 
-import { Download, FileText, ListChecks, Scale } from "lucide-react";
+import { useState } from "react";
+import { Download, FileText, ListChecks, Scale, Trash2 } from "lucide-react";
 import { setActiveArtifact, useStore } from "@/lib/store";
+import { confirmDeleteArtifact, deleteArtifact } from "@/lib/artifacts/deleteArtifact";
 
 export function ArtifactCard({ artifactId }: { artifactId: string }) {
   const artifacts = useStore((s) => s.artifacts);
   const artifact = artifacts.find((a) => a.id === artifactId);
   const activeId = useStore((s) => s.activeArtifactId);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
 
   if (!artifact) return null;
+
+  const remove = async () => {
+    if (deleting || !confirmDeleteArtifact(artifact.title)) return;
+    setDeleting(true);
+    setDeleteError("");
+    const error = await deleteArtifact(artifact.id);
+    // On success the card disappears with the artifact; on failure it stays and says why.
+    if (error) {
+      setDeleteError(error);
+      setDeleting(false);
+    }
+  };
 
   const isLegal = artifact.kind === "legal_paper" || artifact.kind === "contract";
   const isPlan = artifact.kind === "plan";
@@ -61,6 +77,7 @@ export function ArtifactCard({ artifactId }: { artifactId: string }) {
         <p className="mt-0.5 truncate text-[12px] text-foreground/50">
           {subtitle}
         </p>
+        {deleteError && <p role="alert" className="mt-1 text-[12px] text-red-600">{deleteError}</p>}
       </div>
 
       {/* Right Action Button(s) */}
@@ -94,6 +111,17 @@ export function ArtifactCard({ artifactId }: { artifactId: string }) {
             <span>Word</span>
           </a>
         )}
+
+        <button
+          type="button"
+          onClick={() => void remove()}
+          disabled={deleting}
+          title="Delete document"
+          aria-label={`Delete ${artifact.title || "document"}`}
+          className="btn-quiet size-8 shrink-0 rounded-lg text-foreground/50 hover:text-red-600 disabled:opacity-40"
+        >
+          <Trash2 className="size-4" aria-hidden />
+        </button>
       </div>
     </div>
   );

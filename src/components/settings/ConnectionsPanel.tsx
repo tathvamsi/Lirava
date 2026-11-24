@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { KeyRound, Plug, Puzzle } from "lucide-react";
+import { useEffect, useState, type ReactNode } from "react";
+import { ExternalLink, KeyRound, Plug, Puzzle } from "lucide-react";
 import { Section } from "@/components/SettingsKit";
 import { kbRequest } from "@/lib/knowledge-api";
 import { takeConnectorResult } from "@/lib/settings-modal";
@@ -39,6 +39,18 @@ async function loadAll(): Promise<Loaded> {
 }
 
 const STATUS_TEXT: Record<string, string> = { active: "Connected", expired: "Expired", initiated: "Not connected" };
+
+/** Composio's dashboard, where a person signs in and copies their project API key. */
+const COMPOSIO_URL = "https://platform.composio.dev";
+
+function ComposioLink({ children }: { children: ReactNode }) {
+  return (
+    <a href={COMPOSIO_URL} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-brand-readable hover:underline">
+      {children}
+      <ExternalLink className="size-3" strokeWidth={1.75} aria-hidden />
+    </a>
+  );
+}
 
 /** Connect outside apps and install plugins. Uses the integrations the backend already provides. */
 export default function ConnectionsPanel() {
@@ -101,44 +113,10 @@ export default function ConnectionsPanel() {
         </p>
       )}
 
-      <Section eyebrow="Apps" title="Connector key" description="Connectors are provided through Composio. Use your own project key, or the workspace's if one is set up.">
-        <div className="surface grid gap-3 p-4">
-          <p className="flex items-center gap-2 text-body-sm">
-            <KeyRound className="size-4 shrink-0 text-foreground/50" strokeWidth={1.5} aria-hidden />
-            {data.ownKey ? "Using your own key." : data.configured ? "Using the workspace's key." : "No key yet. Add one to connect apps."}
-          </p>
-          <form
-            className="flex flex-wrap items-center gap-2"
-            onSubmit={(e) => {
-              e.preventDefault();
-              void saveKey();
-            }}
-          >
-            <label className="sr-only" htmlFor="connector-key">
-              Composio project key
-            </label>
-            <input
-              id="connector-key"
-              type="password"
-              autoComplete="off"
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-              placeholder="ak_…"
-              className="h-9 min-w-[12rem] flex-1 rounded-lg border border-border bg-card px-3 font-mono text-[13px] outline-none placeholder:text-foreground/35 focus:border-brand/60"
-            />
-            <button type="submit" disabled={busy !== "" || !apiKey.trim().startsWith("ak_")} className="btn-primary h-9 px-3 text-[13px] disabled:opacity-40">
-              Save key
-            </button>
-            {data.ownKey && (
-              <button type="button" disabled={busy !== ""} onClick={() => void act("key", () => kbRequest(`${BASE}/connectors/key`, { method: "DELETE" }), "Key removed.")} className="btn-quiet h-9 px-3 text-[13px]">
-                Remove key
-              </button>
-            )}
-          </form>
-        </div>
-      </Section>
-
-      <Section eyebrow="Apps" title="Connected apps" description="Let Lirava find and reference material in the tools you already use. You can disconnect at any time.">
+      <Section title="Connect your apps" description={`Sign in to each app on its own page and approve access (OAuth). ${data.configured ? "You do not need a Composio account or any key. " : ""}You can disconnect at any time.`}>
+        {!data.configured && (
+          <p className="surface mb-3 p-4 text-body-sm text-foreground/70">App connections are not set up yet. Ask your administrator to turn them on, or add your own Composio key under Advanced below.</p>
+        )}
         {data.connectorError && (
           <p role="alert" className="mb-3 text-[12.5px] text-destructive">
             {data.connectorError}
@@ -165,7 +143,50 @@ export default function ConnectionsPanel() {
             </li>
           ))}
         </ul>
-        {!data.configured && <p className="mt-2 text-[12px] text-foreground/55">Add a connector key above to connect apps.</p>}
+      </Section>
+
+      <Section eyebrow="Advanced" title="Use your own Composio key" description="Most people do not need this: your administrator's key already lets you connect apps. Add your own only if you manage your own Composio project.">
+        <details open={!data.configured} className="surface group">
+          <summary className="flex cursor-pointer list-none items-center gap-2 p-4 text-body-sm select-none">
+            <KeyRound className="size-4 shrink-0 text-foreground/50" strokeWidth={1.5} aria-hidden />
+            <span className="flex-1">{data.ownKey ? "Using your own key" : data.configured ? "Using the workspace's key" : "No key yet"}</span>
+            <span className="text-[12px] text-foreground/50 group-open:hidden">Show</span>
+            <span className="hidden text-[12px] text-foreground/50 group-open:inline">Hide</span>
+          </summary>
+          <div className="grid gap-3 border-t border-border p-4">
+            <p className="text-[12.5px] text-foreground/60">
+              Need a key? <ComposioLink>Get your Composio API key</ComposioLink>. Sign in or create an account, open your project, and copy its API key (it starts with <span className="font-mono">ak_</span>), then paste it below.
+            </p>
+            <form
+              className="flex flex-wrap items-center gap-2"
+              onSubmit={(e) => {
+                e.preventDefault();
+                void saveKey();
+              }}
+            >
+              <label className="sr-only" htmlFor="connector-key">
+                Composio project key
+              </label>
+              <input
+                id="connector-key"
+                type="password"
+                autoComplete="off"
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+                placeholder="ak_…"
+                className="h-9 min-w-[12rem] flex-1 rounded-lg border border-border bg-card px-3 font-mono text-[13px] outline-none placeholder:text-foreground/35 focus:border-brand/60"
+              />
+              <button type="submit" disabled={busy !== "" || !apiKey.trim().startsWith("ak_")} className="btn-primary h-9 px-3 text-[13px] disabled:opacity-40">
+                Save key
+              </button>
+              {data.ownKey && (
+                <button type="button" disabled={busy !== ""} onClick={() => void act("key", () => kbRequest(`${BASE}/connectors/key`, { method: "DELETE" }), "Key removed.")} className="btn-quiet h-9 px-3 text-[13px]">
+                  Remove key
+                </button>
+              )}
+            </form>
+          </div>
+        </details>
       </Section>
 
       <Section eyebrow="Extensions" title="Plugins" description="Add ready-made commands for common litigation work.">

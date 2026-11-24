@@ -94,13 +94,14 @@ export async function sendMessage(
   text: string,
   attachments: Attachment[] = [],
   conversationId?: string,
-  messageId?: string
+  messageId?: string,
+  provider?: string,
 ) {
   if (!text.trim() && !attachments.length) return;
   const user = await caller();
 
   // In the background: the question is saved and this returns at once. The answer streams in as it is written.
-  const res = await sendVakilMessage(vakilId, text.trim(), user.id, conversationId, messageId, attachments, true);
+  const res = await sendVakilMessage(vakilId, text.trim(), user.id, conversationId, messageId, attachments, true, provider);
   return {
     userMessage: res?.userMessage,
     assistantMessage: res?.assistantMessage,
@@ -114,7 +115,8 @@ export async function startConversation(
   attachments: Attachment[] = [],
   customConvId?: string,
   messageId?: string,
-  matterId?: string
+  matterId?: string,
+  provider?: string,
 ) {
   const user = await caller();
   const conv = await createBackendConversation(
@@ -124,7 +126,7 @@ export async function startConversation(
     customConvId,
     matterId
   );
-  const res = await sendVakilMessage(vakilId, text.trim(), user.id, conv.id, messageId, attachments, true);
+  const res = await sendVakilMessage(vakilId, text.trim(), user.id, conv.id, messageId, attachments, true, provider);
   return {
     conversationId: conv.id,
     conversation: conv,

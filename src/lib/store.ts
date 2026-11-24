@@ -119,6 +119,14 @@ export function updateArtifactLocally(artifact: DocumentArtifact) {
   set({ artifacts: upsert(state.artifacts, artifact) });
 }
 
+/** Removes an artifact from the list (and closes the panel if it was open), the same as the server's "artifact_deleted" event. */
+export function deleteArtifactLocally(id: string) {
+  set({
+    artifacts: without(state.artifacts, id),
+    activeArtifactId: state.activeArtifactId === id ? null : state.activeArtifactId,
+  });
+}
+
 export function deleteConversationLocally(id: string) {
   set({
     conversations: without(state.conversations, id),
@@ -152,7 +160,22 @@ export function addConversationLocally(conversation: Conversation & { userId?: s
   set({ conversations: upsert(state.conversations, conversation) });
 }
 
+// A streamed answer arrives as hundreds of tiny pieces, and applying each one re-renders the whole message list, which froze
+// the page for the length of a long answer. The pieces are gathered and applied about ten times a second instead.
+const pendingDeltas = new Map<string, string>();
+let deltaTimer: ReturnType<typeof setTimeout> | null = null;
+function flushDeltas() {
+  if (deltaTimer) clearTimeout(deltaTimer);
+  deltaTimer = null;
+  if (pendingDeltas.size === 0) return;
+  const batch = new Map(pendingDeltas);
+  pendingDeltas.clear();
+  set({ messages: state.messages.map((m): Message => (batch.has(m.id) ? { ...m, text: m.text + batch.get(m.id) } : m)) });
+}
+
 function apply(ev: ServerEvent) {
+  // Any other event may read or replace message text, so the gathered pieces are applied first and in order.
+  if (ev.type !== "message_delta") flushDeltas();
   switch (ev.type) {
     case "snapshot": {
       const lastRead = { ...(ev.data.preferences?.lastRead ?? {}) };
@@ -183,8 +206,11 @@ function apply(ev: ServerEvent) {
       else running[ev.conversationId] = ev.data.status;
       return set({ running });
     }
-    case "message_delta":
-      return set({ messages: state.messages.map((m): Message => (m.id === ev.id ? { ...m, text: m.text + ev.delta } : m)) });
+    case "message_delta": {
+      pendingDeltas.set(ev.id, (pendingDeltas.get(ev.id) ?? "") + ev.delta);
+      if (!deltaTimer) deltaTimer = setTimeout(flushDeltas, 100);
+      return;
+    }
     case "artifact":
       return set({
         artifacts: upsert(state.artifacts, ev.data),

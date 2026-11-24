@@ -2,9 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowDownToLine, ArrowUpRight, BookOpen, FileText, Files, MessageSquare, Plus, RefreshCw, Scale, Search, X } from "lucide-react";
+import { ArrowDownToLine, ArrowUpRight, BookOpen, FileText, Files, MessageSquare, Plus, RefreshCw, Scale, Search, Trash2, X } from "lucide-react";
 import { z } from "zod";
 import type { DocumentArtifact } from "@/lib/types";
+import { confirmDeleteArtifact, deleteArtifact } from "@/lib/artifacts/deleteArtifact";
 import { DocumentPreview } from "./DocumentPreview";
 
 const responseSchema = z.object({
@@ -50,6 +51,7 @@ export function ArtifactLibrary() {
   const [selected, setSelected] = useState<DocumentArtifact | null>(null);
   const [downloadError, setDownloadError] = useState("");
   const [downloading, setDownloading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const dialog = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
@@ -103,6 +105,20 @@ export function ArtifactLibrary() {
     } finally {
       setDownloading(false);
     }
+  }
+
+  async function remove(artifact: DocumentArtifact) {
+    if (deleting || !confirmDeleteArtifact(artifact.title)) return;
+    setDeleting(true);
+    setDownloadError("");
+    const failure = await deleteArtifact(artifact.id);
+    setDeleting(false);
+    if (failure) {
+      setDownloadError(failure);
+      return;
+    }
+    setArtifacts((list) => (list ? list.filter((a) => a.id !== artifact.id) : list));
+    dialog.current?.close(); // its onClose clears the selection
   }
 
   const needle = query.trim().toLowerCase();
@@ -190,6 +206,7 @@ export function ArtifactLibrary() {
             {selected.docxFileId && <button type="button" disabled={downloading} onClick={() => void download(selected, selected.docxFileId, "docx")} className="btn-quiet px-3 py-2 text-xs disabled:opacity-40">Download Word</button>}
             {!selected.pdfFileId && !selected.docxFileId && selected.fileId && <button type="button" disabled={downloading} onClick={() => void download(selected, selected.fileId, selected.filename.split(".").pop() || "txt")} className="btn-quiet px-3 py-2 text-xs disabled:opacity-40">Download file</button>}
             {downloading && <span role="status" className="text-xs text-muted">Preparing download…</span>}
+            <button type="button" disabled={deleting} onClick={() => void remove(selected)} className="btn-quiet ml-auto gap-1.5 px-3 py-2 text-xs text-red-600 disabled:opacity-40"><Trash2 className="size-3.5" aria-hidden /> {deleting ? "Deleting…" : "Delete"}</button>
           </div>
           {downloadError && <p role="alert" className="px-4 pb-3 text-sm text-brand-readable sm:px-6">{downloadError}</p>}
           <div className="min-h-0 flex-1"><DocumentPreview key={selected.id} artifact={selected} /></div>

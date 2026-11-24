@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useSyncExternalStore, type ComponentType } from "react";
-import { Archive, Bell, BookOpen, CalendarClock, Database, Info, Keyboard, Languages, NotebookPen, Plug, ShieldCheck, SlidersHorizontal, Sparkles, UserRound } from "lucide-react";
+import { Archive, Bell, Blocks, BookOpen, CalendarClock, Database, Info, Keyboard, Languages, NotebookPen, Plug, ShieldCheck, SlidersHorizontal, Sparkles, UserRound } from "lucide-react";
 import { DOCUMENT_LANGUAGES } from "@/lib/citationCheck";
+import { openSettings } from "@/lib/settings-modal";
 import { setDocumentLanguage, useStore } from "@/lib/store";
 import type { DocumentLanguage } from "@/lib/types";
 import { PrivacyContent } from "@/components/marketing/PrivacyContent";
@@ -105,14 +106,47 @@ function PrivacyPanel() {
   );
 }
 
-export type TabGroup = "settings" | "library" | "legal";
+/** The Customization page: a front door to the things that tailor Lirava to how a person works. */
+const CUSTOMIZE_CARDS = [
+  { id: "automations", icon: CalendarClock, title: "Automations", text: "Prompts that run by themselves on a schedule, such as a morning hearing brief." },
+  { id: "connections", icon: Plug, title: "Integrations", text: "Connect your apps and install plugins." },
+  { id: "personalization", icon: Sparkles, title: "Memory", text: "What Lirava remembers about you across chats." },
+  { id: "knowledge", icon: BookOpen, title: "Knowledge", text: "Collections of your own documents to answer from." },
+  { id: "notes", icon: NotebookPen, title: "Notes", text: "Your private working notes." },
+] as const;
+
+function CustomizationPanel() {
+  return (
+    <Section title="Make Lirava yours" description="Set up the things that tailor Lirava to how you work.">
+      <ul className="grid gap-3 sm:grid-cols-2">
+        {CUSTOMIZE_CARDS.map((c) => {
+          const Icon = c.icon;
+          return (
+            <li key={c.id}>
+              <button type="button" onClick={() => openSettings(c.id)} className="surface flex h-full w-full items-start gap-3 p-4 text-left transition-colors hover:border-brand/40">
+                <Icon className="mt-0.5 size-4 shrink-0 text-foreground/50" strokeWidth={1.5} aria-hidden />
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[14px] font-medium">{c.title}</span>
+                  <span className="mt-0.5 block text-[12.5px] text-foreground/60">{c.text}</span>
+                </span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </Section>
+  );
+}
+
+export type TabGroup = "settings" | "customize" | "library" | "legal";
 export type TabDef = { id: string; label: string; icon: ComponentType<{ className?: string; strokeWidth?: number }>; group: TabGroup; panel: ComponentType };
 
 export const TABS: TabDef[] = [
   { id: "general", label: "General", icon: SlidersHorizontal, group: "settings", panel: GeneralPanel },
   { id: "notifications", label: "Notifications", icon: Bell, group: "settings", panel: NotificationsPanel },
   { id: "personalization", label: "Personalization", icon: Sparkles, group: "settings", panel: PersonalizationPanel },
-  { id: "connections", label: "Connections", icon: Plug, group: "settings", panel: ConnectionsPanel },
+  { id: "customization", label: "Customization", icon: Blocks, group: "customize", panel: CustomizationPanel },
+  { id: "connections", label: "Integrations", icon: Plug, group: "customize", panel: ConnectionsPanel },
   { id: "data", label: "Data controls", icon: Database, group: "settings", panel: DataControlsPanel },
   { id: "archived", label: "Archived chats", icon: Archive, group: "settings", panel: ArchivedChatsPanel },
   { id: "shortcuts", label: "Shortcuts", icon: Keyboard, group: "settings", panel: ShortcutsPanel },
@@ -120,6 +154,6 @@ export const TABS: TabDef[] = [
   { id: "about", label: "About", icon: Info, group: "settings", panel: AboutPanel },
   { id: "knowledge", label: "Knowledge", icon: BookOpen, group: "library", panel: KnowledgeTab },
   { id: "notes", label: "Notes", icon: NotebookPen, group: "library", panel: NotesTab },
-  { id: "automations", label: "Automations", icon: CalendarClock, group: "library", panel: AutomationsPanel },
+  { id: "automations", label: "Automations", icon: CalendarClock, group: "customize", panel: AutomationsPanel },
   { id: "privacy", label: "Privacy", icon: ShieldCheck, group: "legal", panel: PrivacyPanel },
 ];

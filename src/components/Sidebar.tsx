@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, useTransition, type ReactNode } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Archive, ArchiveRestore, BookOpen, Boxes, NotebookPen, ChevronRight, Folder,ChevronsUpDown, Ellipsis, FolderKanban, Globe, Keyboard, LayoutGrid, LogOut, PanelLeftClose, Pencil, Pin, PinOff, Scale, Search, Settings, ShieldCheck, SquarePen, Trash2, Upload, X } from "lucide-react";
+import { Archive, ArchiveRestore, BookOpen, Blocks, Boxes, NotebookPen, ChevronRight, Folder,ChevronsUpDown, Ellipsis, FolderKanban, Globe, Keyboard, LayoutGrid, LogOut, PanelLeftClose, Pencil, Pin, PinOff, Search, Settings, ShieldCheck, SquarePen, Trash2, Upload, X } from "lucide-react";
 import { backfillConversationTitles, setConversationFlags, deleteConversation, listMatters, moveConversationToMatter, renameConversation } from "@/app/actions";
 import { LogoutButton } from "@/components/auth/logout-button";
 import { deleteConversationLocally, getState, markRead, renameConversationLocally, updateConversationFlagsLocally, updateConversationMatterLocally, useStore } from "@/lib/store";
@@ -506,13 +506,6 @@ export default function Sidebar() {
               Cases &amp; Matters
             </Link>
             <Link
-              href="/matters/new"
-              className={`flex h-9 items-center gap-3 rounded-lg px-2.5 text-[14px] transition-colors ${pathname === "/matters/new" ? "bg-highlight text-foreground" : "text-foreground/80 hover:bg-highlight hover:text-foreground"}`}
-            >
-              <Scale className="size-4" strokeWidth={1.75} />
-              Hand over a case
-            </Link>
-            <Link
               href="/artifacts"
               className={`flex h-9 items-center gap-3 rounded-lg px-2.5 text-[14px] transition-colors ${pathname === "/artifacts" ? "bg-highlight text-foreground" : "text-foreground/80 hover:bg-highlight hover:text-foreground"}`}
             >
@@ -532,7 +525,15 @@ export default function Sidebar() {
             >
               <NotebookPen className="size-4" strokeWidth={1.75} />
               Notes
-            </Link>          </nav>
+            </Link>
+            <button
+              type="button"
+              onClick={() => openFromMenu("customization")}
+              className="flex h-9 w-full items-center gap-3 rounded-lg px-2.5 text-left text-[14px] text-foreground/80 transition-colors hover:bg-highlight hover:text-foreground"
+            >
+              <Blocks className="size-4" strokeWidth={1.75} />
+              Customization
+            </button>          </nav>
 
           {!q && matters.length > 0 && (
             <section className="mb-5 px-2">

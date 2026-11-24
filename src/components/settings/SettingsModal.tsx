@@ -8,6 +8,7 @@ import { TABS, type TabGroup } from "./registry";
 
 const GROUPS: Array<{ id: TabGroup; label: string | null }> = [
   { id: "settings", label: null },
+  { id: "customize", label: "Workspace" },
   { id: "library", label: "Library" },
   { id: "legal", label: "Legal" },
 ];
