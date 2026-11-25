@@ -130,7 +130,7 @@ export default function ModelPicker({ placement = "up" }: { placement?: "up" | "
                         {o.isDefault && <span className="ml-1.5 text-[11px] text-foreground/45">default</span>}
                       </span>
                       <span className="block truncate font-mono text-[10.5px] text-foreground/50">{o.model}</span>
-                      <span className={`block text-[11.5px] ${o.available && o.hosted ? "text-amber-700 dark:text-amber-400" : "text-foreground/55"}`}>{o.note}</span>
+                      {!(o.available && o.hosted) && <span className="block text-[11.5px] text-foreground/55">{o.note}</span>}
                     </span>
                   </button>
                 </li>
