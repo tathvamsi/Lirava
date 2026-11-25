@@ -16,6 +16,8 @@ import {
   answerCheckpoint,
   createMatterChat,
   deleteConversation,
+  deleteMatterForever,
+  setMatterArchived,
   getMatterFile,
   listMatterConversations,
   listMatters,
@@ -24,6 +26,7 @@ import {
 } from "@/app/actions";
 import type { Conversation, Matter, MatterEvent } from "@/lib/types";
 import CaseFile from "@/components/matters/CaseFile";
+import CaseBrain from "@/components/matters/CaseBrain";
 import KnowledgePicker from "@/components/knowledge/KnowledgePicker";
 import {
   deleteConversationLocally,
@@ -116,6 +119,36 @@ export default function MatterWorkspace({
       return null;
     } catch {
       return "We could not save that. Please try again.";
+    }
+  }
+
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  async function toggleMatterArchive() {
+    if (!matter || busy) return;
+    setBusy(true);
+    setActionError(null);
+    try {
+      setMatter(await setMatterArchived(matterId, matter.status !== "Archived"));
+    } catch {
+      setActionError("We could not update the matter. Please try again.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function removeMatter() {
+    if (busy) return;
+    setBusy(true);
+    setActionError(null);
+    try {
+      await deleteMatterForever(matterId);
+      router.push("/matters");
+    } catch {
+      setActionError("We could not delete the matter. Please try again.");
+      setBusy(false);
+      setConfirmDelete(false);
     }
   }
 
@@ -221,7 +254,27 @@ export default function MatterWorkspace({
             {matter.court || "Court not recorded"}
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          {confirmDelete ? (
+            <span className="flex items-center gap-2 rounded-lg border border-red-400/40 px-3 py-1.5 text-[12px] text-foreground/80">
+              Delete this matter, its papers and timeline? Chats are kept.
+              <button type="button" disabled={busy} onClick={() => void removeMatter()} className="rounded-md bg-red-500/90 px-2.5 py-1 text-white disabled:opacity-60">
+                {busy ? "Deleting…" : "Delete"}
+              </button>
+              <button type="button" onClick={() => setConfirmDelete(false)} className="btn-quiet px-2 py-1">Cancel</button>
+            </span>
+          ) : (
+            <>
+              <button type="button" disabled={busy} onClick={() => void toggleMatterArchive()} className="btn-quiet inline-flex h-10 items-center gap-2 px-3 text-[13px]">
+                <Archive className="size-4" />
+                {matter.status === "Archived" ? "Restore" : "Archive"}
+              </button>
+              <button type="button" onClick={() => setConfirmDelete(true)} className="btn-quiet inline-flex h-10 items-center gap-2 px-3 text-[13px] text-red-300">
+                <Trash2 className="size-4" />
+                Delete
+              </button>
+            </>
+          )}
           <KnowledgePicker scope="matter" id={matterId} placement="down" />
           <button
             type="button"
@@ -240,6 +293,7 @@ export default function MatterWorkspace({
         </p>
       )}
       <CaseFile matter={matter} events={events} chatHref={chatHref} onAnswer={answer} />
+      <CaseBrain matterId={matterId} />
       {actionError && (
         <p role="alert" className="mt-6 text-[13px] text-red-300">
           {actionError}

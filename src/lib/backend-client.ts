@@ -1,4 +1,4 @@
-import type { Attachment, Conversation, Vakil, Matter, MatterEvent, MatterIntake, Message } from "./types";
+import type { Attachment, CaseNode, CaseNodeInput, Conversation, Vakil, Matter, MatterEvent, MatterIntake, Message } from "./types";
 
 export const BACKEND_URL =
   process.env.BACKEND_URL ||
@@ -140,9 +140,42 @@ export async function resolveBackendCheckpoint(matterId: string, eventId: string
   return data.events || [];
 }
 
+export async function setBackendMatterStatus(id: string, status: "active" | "on_hold" | "closed" | "archived"): Promise<Matter> {
+  const data = await backendFetch<{ matter: Matter }>(`/api/matters/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify({ status }) });
+  return normalizeMatter(data.matter);
+}
+
+export async function fetchCaseNodes(matterId: string): Promise<CaseNode[]> {
+  const data = await backendFetch<{ nodes: CaseNode[] }>(`/api/matters/${encodeURIComponent(matterId)}/nodes`);
+  return data.nodes || [];
+}
+
+export async function createCaseNode(matterId: string, input: CaseNodeInput): Promise<CaseNode> {
+  const data = await backendFetch<{ node: CaseNode }>(`/api/matters/${encodeURIComponent(matterId)}/nodes`, { method: "POST", body: JSON.stringify(input) });
+  return data.node;
+}
+
+export async function updateCaseNode(matterId: string, nodeId: string, input: CaseNodeInput): Promise<CaseNode> {
+  const data = await backendFetch<{ node: CaseNode }>(`/api/matters/${encodeURIComponent(matterId)}/nodes/${encodeURIComponent(nodeId)}`, { method: "PATCH", body: JSON.stringify(input) });
+  return data.node;
+}
+
+export async function removeCaseNode(matterId: string, nodeId: string): Promise<CaseNode[]> {
+  const data = await backendFetch<{ nodes: CaseNode[] }>(`/api/matters/${encodeURIComponent(matterId)}/nodes/${encodeURIComponent(nodeId)}`, { method: "DELETE" });
+  return data.nodes || [];
+}
+
+export async function importCaseNodes(matterId: string): Promise<{ added: number; nodes: CaseNode[] }> {
+  return backendFetch(`/api/matters/${encodeURIComponent(matterId)}/nodes/import`, { method: "POST", body: "{}" });
+}
+
+export async function deleteBackendMatter(id: string): Promise<void> {
+  await backendFetch(`/api/matters/${encodeURIComponent(id)}`, { method: "DELETE" });
+}
+
 function normalizeMatter(matter: Matter): Matter {
   const status = matter.status as string;
-  return { ...matter, status: status === "active" ? "Active" : status === "on_hold" ? "On hold" : "Closed" };
+  return { ...matter, status: status === "active" ? "Active" : status === "on_hold" ? "On hold" : status === "archived" ? "Archived" : "Closed" };
 }
 
 export async function fetchConversation(id: string): Promise<{ conversation: Conversation; messages: Message[] } | null> {

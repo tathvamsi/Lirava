@@ -2,12 +2,19 @@
 
 import { requireUser } from "@/lib/auth";
 import { buildConversationTitle } from "@/lib/conversation-title";
-import type { Attachment, MatterIntake } from "@/lib/types";
+import type { Attachment, CaseNodeInput, MatterIntake } from "@/lib/types";
 import {
+  createCaseNode,
+  fetchCaseNodes,
+  importCaseNodes,
+  removeCaseNode,
+  updateCaseNode,
   backendFetch,
   createBackendConversation,
   sendVakilMessage,
   createBackendMatter,
+  deleteBackendMatter,
+  setBackendMatterStatus,
   fetchMatters,
   fetchMatterFile,
   resolveBackendCheckpoint,
@@ -45,6 +52,46 @@ export async function handOverCase(input: { title: string; client?: string; cour
 export async function getMatterFile(matterId: string) {
   await caller();
   return fetchMatterFile(matterId);
+}
+
+// ---------- Case knowledge tree ----------
+
+export async function listCaseNodes(matterId: string) {
+  await caller();
+  return fetchCaseNodes(matterId);
+}
+
+export async function addCaseNode(matterId: string, input: CaseNodeInput) {
+  await caller();
+  return createCaseNode(matterId, input);
+}
+
+export async function editCaseNode(matterId: string, nodeId: string, input: CaseNodeInput) {
+  await caller();
+  return updateCaseNode(matterId, nodeId, input);
+}
+
+export async function deleteCaseNode(matterId: string, nodeId: string) {
+  await caller();
+  return removeCaseNode(matterId, nodeId);
+}
+
+/** Pulls what the papers say into the tree as proposed nodes to confirm. */
+export async function importCaseNodesFromPapers(matterId: string) {
+  await caller();
+  return importCaseNodes(matterId);
+}
+
+/** Archives a matter (hidden from the main list, can be restored) or brings it back. */
+export async function setMatterArchived(matterId: string, archived: boolean) {
+  await caller();
+  return setBackendMatterStatus(matterId, archived ? "archived" : "active");
+}
+
+/** Deletes a matter for good, with its timeline, case file and papers. Its chats are kept. */
+export async function deleteMatterForever(matterId: string) {
+  await caller();
+  await deleteBackendMatter(matterId);
 }
 
 export async function answerCheckpoint(matterId: string, eventId: string, resolution: "approved" | "changes", note: string) {

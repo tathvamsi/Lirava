@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, useTransition, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Archive, ArchiveRestore, BookOpen, Blocks, Boxes, NotebookPen, ChevronRight, Folder,ChevronsUpDown, Ellipsis, FolderKanban, Globe, Keyboard, LayoutGrid, LogOut, PanelLeftClose, Pencil, Pin, PinOff, Search, Settings, ShieldCheck, SquarePen, Trash2, Upload, X } from "lucide-react";
-import { backfillConversationTitles, setConversationFlags, deleteConversation, listMatters, moveConversationToMatter, renameConversation } from "@/app/actions";
+import { backfillConversationTitles, setConversationFlags, deleteConversation, deleteMatterForever, setMatterArchived, listMatters, moveConversationToMatter, renameConversation } from "@/app/actions";
 import { LogoutButton } from "@/components/auth/logout-button";
 import { deleteConversationLocally, getState, markRead, renameConversationLocally, updateConversationFlagsLocally, updateConversationMatterLocally, useStore } from "@/lib/store";
 import { openSettings } from "@/lib/settings-modal";
@@ -56,6 +57,7 @@ export default function Sidebar() {
   const [searching, setSearching] = useState(false);
   const [q, setQ] = useState("");
   const [confirming, setConfirming] = useState<string | null>(null);
+  const [confirmingMatter, setConfirmingMatter] = useState<string | null>(null);
   const [, start] = useTransition();
 
   // ── Conversation options menu (Rename / Pin / Share / Archive / Delete) ──
@@ -276,6 +278,30 @@ export default function Sidebar() {
       }
     });
 
+  const leaveIfOnMatter = (id: string) => {
+    if (pathname === `/matters/${id}` || pathname === `/matters/${encodeURIComponent(id)}`) router.push("/matters");
+  };
+  const archiveMatter = async (matter: Matter) => {
+    try {
+      await setMatterArchived(matter.id, true);
+      setMatters((cur) => cur.map((m) => (m.id === matter.id ? { ...m, status: "Archived" } : m)));
+      leaveIfOnMatter(matter.id);
+    } catch {
+      /* the matter stays where it is */
+    }
+  };
+  const removeMatter = async (matter: Matter) => {
+    try {
+      await deleteMatterForever(matter.id);
+      // Its chats are kept by the server and become general chats.
+      for (const chat of getState().conversations.filter((item) => item.matterId === matter.id)) updateConversationMatterLocally(chat.id, null);
+      setMatters((cur) => cur.filter((m) => m.id !== matter.id));
+      setConfirmingMatter(null);
+      leaveIfOnMatter(matter.id);
+    } catch {
+      setConfirmingMatter(null);
+    }
+  };
   const moveToMatter = (c: Conversation, matterId: string | null) =>
     start(async () => {
       updateConversationMatterLocally(c.id, matterId);
@@ -542,7 +568,7 @@ export default function Sidebar() {
                 <Link href="/matters" className="text-[12px] text-foreground/55 transition-colors hover:text-foreground" aria-label="View all matters">View all</Link>
               </div>
               <div className="max-h-[38vh] space-y-0.5 overflow-y-auto">
-                {matters.map((matter) => {
+                {matters.filter((item) => item.status !== "Archived").map((matter) => {
                   const expanded = expandedMatterIds.includes(matter.id);
                   const matterChats = conversations.filter((conversation) => conversation.matterId === matter.id).sort((a, b) => b.updatedAt - a.updatedAt);
                   const onMatterPage = pathname === `/matters/${matter.id}` || pathname === `/matters/${encodeURIComponent(matter.id)}`;
@@ -556,8 +582,54 @@ export default function Sidebar() {
                         <Folder className={`size-3.5 shrink-0 ${hasActiveChat || onMatterPage ? "text-brand-readable" : "text-foreground/50"}`} strokeWidth={1.75} />
                         <span className="truncate">{matter.title}</span>
                       </Link>
-                      {matterChats.length > 0 && <span className="mr-2 rounded-[999px] bg-highlight px-1.5 font-mono text-[10.5px] leading-5 text-foreground/60 group-hover:bg-card">{matterChats.length}</span>}
+                      <button
+                        data-conv-trigger={matter.id}
+                        type="button"
+                        className={`mr-1 flex size-6 shrink-0 items-center justify-center rounded text-foreground/55 hover:bg-card hover:text-foreground ${menuOpenId === matter.id ? "text-foreground" : ""}`}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          if (menuOpenId === matter.id) return setMenuOpenId(null);
+                          const rect = e.currentTarget.getBoundingClientRect();
+                          const up = window.innerHeight - rect.bottom < 200 && rect.top > 200;
+                          setMenuPos({ left: Math.max(8, rect.right - 208), ...(up ? { bottom: window.innerHeight - rect.top + 4 } : { top: rect.bottom + 4 }) });
+                          setMenuOpenId(matter.id);
+                        }}
+                        aria-label={`Options for ${matter.title}`}
+                        aria-expanded={menuOpenId === matter.id}
+                        title={`Options · ${matterChats.length} chat${matterChats.length === 1 ? "" : "s"}`}
+                      >
+                        <Ellipsis className="size-4" strokeWidth={1.75} />
+                      </button>
+                      {menuOpenId === matter.id && menuPos && (
+                        <div ref={menuRef} data-conv-menu style={{ position: "fixed", ...menuPos }} className="z-[70] w-52 overflow-hidden rounded-xl border border-border bg-background py-1.5 text-foreground shadow-elevated animate-page-rise">
+                          <p className="px-3 pb-1 text-[11px] text-foreground/45">{matterChats.length} chat{matterChats.length === 1 ? "" : "s"} in this matter</p>
+                          <MenuItem icon={<FolderKanban className="size-4" strokeWidth={1.75} />} label="Open matter" onClick={() => (setMenuOpenId(null), router.push(`/matters/${encodeURIComponent(matter.id)}`))} />
+                          <MenuItem icon={<Archive className="size-4" strokeWidth={1.75} />} label="Archive matter" onClick={() => (setMenuOpenId(null), void archiveMatter(matter))} />
+                          <MenuItem icon={<Trash2 className="size-4 text-destructive" strokeWidth={1.75} />} label="Delete matter" danger onClick={() => (setMenuOpenId(null), setConfirmingMatter(matter.id))} />
+                        </div>
+                      )}
                     </div>
+                    {confirmingMatter === matter.id && typeof document !== "undefined" && createPortal(
+                      <div
+                        className="fixed inset-0 z-[90] grid place-items-center bg-black/50 p-4"
+                        role="presentation"
+                        onMouseDown={(e) => e.target === e.currentTarget && setConfirmingMatter(null)}
+                        onKeyDown={(e) => e.key === "Escape" && setConfirmingMatter(null)}
+                      >
+                        <div role="alertdialog" aria-modal="true" aria-labelledby="delete-matter-title" className="surface w-full max-w-sm p-6 shadow-elevated">
+                          <h2 id="delete-matter-title" className="font-serif text-xl">Delete this matter?</h2>
+                          <p className="mt-2 text-[14px] leading-relaxed text-foreground/70">
+                            “{matter.title}” will be deleted with its papers, timeline and case tree. This cannot be undone. Its {matterChats.length} chat{matterChats.length === 1 ? " is" : "s are"} kept as general chats.
+                          </p>
+                          <div className="mt-6 flex justify-end gap-2">
+                            <button type="button" autoFocus onClick={() => setConfirmingMatter(null)} className="btn-quiet h-9 px-4 text-[13px]">Cancel</button>
+                            <button type="button" onClick={() => void removeMatter(matter)} className="h-9 rounded-lg bg-red-500/90 px-4 text-[13px] text-white hover:bg-red-500">Delete matter</button>
+                          </div>
+                        </div>
+                      </div>,
+                      document.body,
+                    )}
                     <div className={`grid transition-[grid-template-rows] duration-200 ease-out ${expanded && matterChats.length > 0 ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
                       <div className="overflow-hidden">
                         <div className="ml-4 space-y-0.5 border-l border-border py-0.5 pl-2">

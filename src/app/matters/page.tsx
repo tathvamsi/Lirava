@@ -15,12 +15,13 @@ import { createMatter as createMatterAction, listMatters } from "@/app/actions";
 import type { Matter } from "@/lib/types";
 import { useStore } from "@/lib/store";
 
-type MatterStatus = "Active" | "On hold" | "Closed";
+type MatterStatus = "Active" | "On hold" | "Closed" | "Archived";
 const statuses: Array<"All" | MatterStatus> = [
   "All",
   "Active",
   "On hold",
   "Closed",
+  "Archived",
 ];
 
 export default function MattersPage() {
@@ -55,7 +56,7 @@ export default function MattersPage() {
     const needle = query.trim().toLowerCase();
     return matters.filter(
       (matter) =>
-        (status === "All" || matter.status === status) &&
+        (status === "All" ? matter.status !== "Archived" : matter.status === status) &&
         (!needle ||
           [matter.title, matter.client, matter.court].some((value) =>
             value.toLowerCase().includes(needle),
@@ -212,7 +213,7 @@ export default function MattersPage() {
                   </p>
                 </div>
                 <span
-                  className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] ${matter.status === "Active" ? "bg-emerald-500/10 text-emerald-300" : matter.status === "Closed" ? "bg-highlight text-foreground/50" : "bg-amber-500/10 text-amber-300"}`}
+                  className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] ${matter.status === "Active" ? "bg-emerald-500/10 text-emerald-300" : matter.status === "Closed" || matter.status === "Archived" ? "bg-highlight text-foreground/50" : "bg-amber-500/10 text-amber-300"}`}
                 >
                   {matter.status}
                 </span>

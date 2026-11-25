@@ -113,7 +113,29 @@ export type MatterIntake = {
   urgency: "routine" | "soon" | "urgent";
   deadline: string;
 };
-export type Matter = { id: string; userId: string; title: string; client: string; court: string; status: "Active" | "On hold" | "Closed"; nextDate: string | null; notes: string; stage?: MatterStage; intake?: MatterIntake | null; handedOverAt?: number | null; createdAt: number; updatedAt: number };
+export type CaseNodeKind = "section" | "party" | "fact" | "event" | "issue" | "law" | "argument" | "evidence" | "question" | "note";
+export type CaseNodeStatus = "proposed" | "confirmed" | "disputed";
+export type CaseNodeRelation = "supports" | "contradicts" | "cites";
+/** One item of a matter's case knowledge tree. Sections are the top level; everything else hangs under one. */
+export type CaseNode = {
+  id: string;
+  matterId: string;
+  parentId: string | null;
+  kind: CaseNodeKind;
+  title: string;
+  body: string;
+  date: string | null;
+  sources: Array<{ documentId?: string; name?: string; page?: number; quote?: string }>;
+  links: Array<{ to: string; relation: CaseNodeRelation }>;
+  status: CaseNodeStatus;
+  origin: "lawyer" | "document";
+  position: number;
+  createdAt: number;
+  updatedAt: number;
+};
+export type CaseNodeInput = Partial<Pick<CaseNode, "parentId" | "kind" | "title" | "body" | "date" | "status" | "links" | "sources">>;
+
+export type Matter = { id: string; userId: string; title: string; client: string; court: string; status: "Active" | "On hold" | "Closed" | "Archived"; nextDate: string | null; notes: string; stage?: MatterStage; intake?: MatterIntake | null; handedOverAt?: number | null; createdAt: number; updatedAt: number };
 /** One entry on a matter's timeline. Checkpoints wait for the person's approval. */
 export type MatterEvent = {
   id: string;
