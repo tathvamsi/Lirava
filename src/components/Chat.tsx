@@ -8,7 +8,7 @@ import {
   AppWindow, ArrowUp, Plus, Brain, Download,
   FileText, Paperclip, Check, Clock, Globe, KeyRound,
   Laptop, MessageSquare, MonitorSmartphone, Search, ShieldAlert, Sparkles,
-  Terminal, X, Folder, Scale, Copy, ThumbsUp, ThumbsDown, RotateCcw, Square,
+  Terminal, X, Folder, Scale, Copy, ThumbsUp, ThumbsDown, RotateCcw, Square, PanelRight,
 } from "lucide-react";
 import { renameConversation, sendMessage, startConversation } from "@/app/actions";
 import {
@@ -28,6 +28,7 @@ import { ArtifactBoard, ArtifactCard } from "./artifacts";
 import { SourceList } from "./SourceList";
 import { CitationCheck } from "./chat/CitationCheck";
 import { SourcePanel } from "./chat/SourcePanel";
+import { CasePanel } from "./chat/CasePanel";
 import { WorkTrace, type TraceRow } from "./chat/WorkTrace";
 import { ClarifyCard } from "./chat/ClarifyCard";
 import KnowledgePicker from "./knowledge/KnowledgePicker";
@@ -120,7 +121,36 @@ export default function Chat({ vakil, conversation, matterId, matterLabel }: { v
   // The source behind a citation opens beside the chat, in the same pane as documents.
   const [sourceState, setOpenSource] = useState<{ citation: Citation; convId: string | null } | null>(null);
   const openSource = sourceState && sourceState.convId === convId ? sourceState.citation : null;
-  const rightPane: "artifact" | "source" | null = activeArtifactId ? "artifact" : openSource ? "source" : null;
+  // The case panel (outputs, case papers, case knowledge tree, sources used). An open document or source takes the pane first.
+  // It opens by itself in a matter's chat on a wide screen, and remembers what the lawyer chose.
+  const [caseOpen, setCaseOpen] = useState(false);
+  const panelMatterId = matterId ?? conversations.find((c) => c.id === convId)?.matterId ?? null;
+  useEffect(() => {
+    let stored: string | null = null;
+    try {
+      stored = localStorage.getItem("lirava.casePanel");
+    } catch {
+      /* storage can be blocked; fall back to the default */
+    }
+    const wide = typeof window !== "undefined" && window.innerWidth >= 1280;
+    // Read after the first paint so the server and browser render the same page; the panel then opens.
+    const timer = setTimeout(() => setCaseOpen(stored === null ? Boolean(panelMatterId) && wide : stored === "1" && wide), 0);
+    return () => clearTimeout(timer);
+  }, [panelMatterId]);
+  const rightPane: "artifact" | "source" | "case" | null = activeArtifactId ? "artifact" : openSource ? "source" : caseOpen ? "case" : null;
+  const toggleCasePanel = () => {
+    const next = rightPane !== "case";
+    if (next) {
+      setActiveArtifact(null);
+      setOpenSource(null);
+    }
+    setCaseOpen(next);
+    try {
+      localStorage.setItem("lirava.casePanel", next ? "1" : "0");
+    } catch {
+      /* the choice just is not remembered */
+    }
+  };
   // Switching chats closes the previous chat's panel and opens the new chat's latest document or plan, if it has one.
   useEffect(() => {
     const latest = convId
@@ -360,7 +390,7 @@ export default function Chat({ vakil, conversation, matterId, matterLabel }: { v
 
       {/* Chat conversation column */}
       <div
-        className={`flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden ${
+        className={`relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden ${
           rightPane ? "hidden lg:flex" : ""
         } ${
           isResizingSplit
@@ -372,6 +402,19 @@ export default function Chat({ vakil, conversation, matterId, matterLabel }: { v
           <Suspense fallback={null}>
             <HistoryLoader convId={convId} />
           </Suspense>
+        )}
+
+        {convId && !fresh && (
+          <button
+            type="button"
+            onClick={toggleCasePanel}
+            aria-label={rightPane === "case" ? "Hide case panel" : "Show case panel"}
+            aria-pressed={rightPane === "case"}
+            title={rightPane === "case" ? "Hide case panel" : "Case panel: documents, case tree, outputs"}
+            className="btn-quiet absolute right-3 top-3 z-10 size-8 p-0"
+          >
+            <PanelRight className="size-4" />
+          </button>
         )}
 
         {/* Scrollable message column — threads pin to newest via column-reverse.
@@ -487,7 +530,18 @@ export default function Chat({ vakil, conversation, matterId, matterLabel }: { v
       </div>
 
       {/* Artifact Board side panel with resizable split divider */}
-      {rightPane && (
+      {rightPane === "case" && (
+        <CasePanel
+          key={panelMatterId ?? "none"}
+          matterId={panelMatterId}
+          conversationId={convId}
+          messages={messages}
+          onOpenSource={openCitation}
+          onClose={toggleCasePanel}
+          width={Math.min(effectiveBoardWidth, 400)}
+        />
+      )}
+      {(rightPane === "artifact" || rightPane === "source") && (
         <>
           <PaneSplitter
             onPointerDown={handleSplitterPointerDown}
