@@ -62,7 +62,7 @@ export default function MatterWorkspace({
   const firstVakil = useStore((state) => state.vakils[0]);
   const storeConversations = useStore((state) => state.conversations);
   const [events, setEvents] = useState<MatterEvent[]>([]);
-  const justHanded = useSearchParams().get("handed") === "1";
+  const justCreated = useSearchParams().get("created") === "1";
 
   useEffect(() => {
     void params.then(({ id }) => {
@@ -287,19 +287,20 @@ export default function MatterWorkspace({
           </button>
         </div>
       </div>
-      {justHanded && (
+      {justCreated && (
         <p role="status" className="mt-6 rounded-xl bg-highlight px-4 py-3 text-[14px] text-foreground/85">
-          Your case has been handed over. Counsel is reading your brief and will post updates below.
+          Your matter is ready. Lirava has created a starting knowledge tree from your brief; review it below before relying on it.
         </p>
       )}
-      <CaseFile matter={matter} events={events} chatHref={chatHref} onAnswer={answer} />
-      <CaseBrain matterId={matterId} />
-      {actionError && (
-        <p role="alert" className="mt-6 text-[13px] text-red-300">
-          {actionError}
-        </p>
-      )}
-      <section className="mt-10">
+      <div className="mt-8 grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(300px,360px)]">
+        <div className="min-w-0">
+          <CaseFile matter={matter} events={events} chatHref={chatHref} onAnswer={answer} />
+          {actionError && (
+            <p role="alert" className="mt-6 text-[13px] text-red-300">
+              {actionError}
+            </p>
+          )}
+          <section className="mt-10">
         <div className="flex items-center justify-between">
           <h2 className="font-serif text-2xl">Chats in this matter</h2>
           <span className="text-[12px] text-foreground/45">
@@ -385,8 +386,8 @@ export default function MatterWorkspace({
             ))}
           </div>
         )}
-      </section>
-      <section className="mt-12">
+          </section>
+          <section className="mt-12">
         <div className="flex items-center justify-between">
           <h2 className="font-serif text-2xl">Documents in this matter</h2>
           <span className="text-[12px] text-foreground/45">
@@ -418,7 +419,15 @@ export default function MatterWorkspace({
             ))}
           </ul>
         )}
-      </section>
+          </section>
+        </div>
+        <aside
+          aria-label="Case tree"
+          className="min-w-0 lg:sticky lg:top-6 lg:max-h-[calc(100dvh-3rem)] lg:overflow-y-auto lg:pr-1"
+        >
+          <CaseBrain matterId={matterId} />
+        </aside>
+      </div>
       {movingId && (
         <div
           className="fixed inset-0 z-50 grid place-items-center bg-black/45 p-4"

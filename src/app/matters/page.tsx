@@ -9,9 +9,8 @@ import {
   Plus,
   Search,
   Users,
-  X,
 } from "lucide-react";
-import { createMatter as createMatterAction, listMatters } from "@/app/actions";
+import { listMatters } from "@/app/actions";
 import type { Matter } from "@/lib/types";
 import { useStore } from "@/lib/store";
 
@@ -28,11 +27,8 @@ export default function MattersPage() {
   const [matters, setMatters] = useState<Matter[]>([]);
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<(typeof statuses)[number]>("All");
-  const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [formError, setFormError] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
   const conversations = useStore((state) => state.conversations);
 
   useEffect(() => {
@@ -64,31 +60,6 @@ export default function MattersPage() {
     );
   }, [matters, query, status]);
 
-  async function createMatter(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    // React clears event.currentTarget once this handler awaits, so keep the form itself.
-    const formElement = event.currentTarget;
-    const form = new FormData(formElement);
-    setSaving(true);
-    setFormError(null);
-    try {
-      const matter = await createMatterAction({
-        title: String(form.get("title") || "Untitled matter").trim(),
-        client: String(form.get("client") || "").trim(),
-        court: String(form.get("court") || "").trim(),
-        nextDate: String(form.get("nextDate") || "").trim(),
-        notes: String(form.get("notes") || "").trim(),
-      });
-      setMatters((current) => [matter, ...current]);
-      setShowForm(false);
-      formElement.reset();
-    } catch {
-      setFormError("We could not create the matter. Please try again.");
-    } finally {
-      setSaving(false);
-    }
-  }
-
   const count = (value: MatterStatus) =>
     matters.filter((matter) => matter.status === value).length;
 
@@ -105,18 +76,11 @@ export default function MattersPage() {
           </p>
         </div>
         <div className="flex shrink-0 flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setShowForm(true)}
+          <Link
+            href="/matters/new"
             className="btn-secondary inline-flex h-10 shrink-0 items-center justify-center gap-2 px-4 text-[13px]"
           >
             <Plus className="size-4" /> New matter
-          </button>
-          <Link
-            href="/matters/new"
-            className="btn-primary inline-flex h-10 shrink-0 items-center justify-center gap-2 px-4 text-[13px]"
-          >
-            Hand over a case
           </Link>
         </div>
       </div>
@@ -185,13 +149,12 @@ export default function MattersPage() {
               : "Create a matter to give your legal research, documents, and conversations a home."}
           </p>
           {!matters.length && (
-            <button
-              type="button"
-              onClick={() => setShowForm(true)}
+            <Link
+              href="/matters/new"
               className="btn-secondary mt-5 h-9 px-4 text-[13px]"
             >
               Create matter
-            </button>
+            </Link>
           )}
         </div>
       ) : (
@@ -247,96 +210,6 @@ export default function MattersPage() {
         </div>
       )}
 
-      {showForm && (
-        <div
-          className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4"
-          role="presentation"
-          onMouseDown={(event) => event.target === event.currentTarget && setShowForm(false)}
-        >
-          <form
-            onSubmit={createMatter}
-            className="surface w-full max-w-lg p-6"
-          >
-            <div className="flex items-start justify-between">
-              <div>
-                <h2 className="font-serif text-2xl">Create a matter</h2>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowForm(false)}
-                className="btn-quiet size-8 p-0"
-                aria-label="Close"
-              >
-                <X className="size-4" />
-              </button>
-            </div>
-            <div className="mt-6 grid gap-4">
-              <label className="text-[12px] text-foreground/65">
-                Matter name
-                <input
-                  required
-                  name="title"
-                  className="field mt-1.5 h-10 w-full"
-                  placeholder="ABC Industries v. Rao"
-                />
-              </label>
-              <label className="text-[12px] text-foreground/65">
-                Client
-                <input
-                  name="client"
-                  className="field mt-1.5 h-10 w-full"
-                  placeholder="Client or firm name"
-                />
-              </label>
-              <label className="text-[12px] text-foreground/65">
-                Court / forum
-                <input
-                  name="court"
-                  className="field mt-1.5 h-10 w-full"
-                  placeholder="High Court of Karnataka"
-                />
-              </label>
-              <label className="text-[12px] text-foreground/65">
-                Next date
-                <input
-                  name="nextDate"
-                  type="date"
-                  className="field mt-1.5 h-10 w-full"
-                />
-              </label>
-              <label className="text-[12px] text-foreground/65">
-                Notes
-                <textarea
-                  name="notes"
-                  className="field mt-1.5 min-h-20 w-full py-2"
-                  placeholder="Short matter summary"
-                />
-              </label>
-            </div>
-            {formError && (
-              <p role="alert" className="mt-4 text-[13px] text-red-300">
-                {formError}
-              </p>
-            )}
-            <div className="mt-6 flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setShowForm(false)}
-                className="btn-quiet h-9 px-3 text-[13px]"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={saving}
-                className="btn-primary h-9 px-4 text-[13px] disabled:opacity-60"
-              >
-                {saving ? "Creating…" : "Create matter"}
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
     </section>
   );
 }

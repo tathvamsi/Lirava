@@ -244,14 +244,23 @@ try {
     await page.getByText("word1", { exact: false }).first().waitFor();
   });
 
-  await step("a matter can be created and shows its documents section", async () => {
+  await step("new matter creates a workspace with a case tree sidebar", async () => {
     await page.goto(`${WEB}/matters`);
-    await page.getByRole("button", { name: /New matter/i }).first().click();
-    await page.fill('input[name="title"]', "E2E v. State");
-    await page.fill('input[name="client"]', "E2E Client");
-    await page.getByRole("button", { name: /^Create matter$/ }).click();
-    await page.getByText("E2E v. State").first().waitFor();
-    await page.getByText("E2E v. State").first().click();
+    await page.getByRole("link", { name: /^New matter$/i }).click();
+    await page.getByRole("heading", { name: "Start a matter" }).waitFor();
+    const overflowY = await page.locator("main.app-shell").evaluate((el) => getComputedStyle(el).overflowY);
+    assert(overflowY === "auto" || overflowY === "scroll", `app pages need vertical scrolling, got overflow-y: ${overflowY}`);
+    await page.getByPlaceholder("Name of your client").fill("E2E Client");
+    await page.getByPlaceholder("Who is on the other side").fill("E2E State");
+    await page.getByPlaceholder(/Sharma v\. Kapoor Builders/).fill("E2E Client v. E2E State");
+    await page.getByRole("button", { name: "Continue" }).click();
+    await page.getByRole("textbox", { name: "What happened" }).fill("The opposing party breached the agreement and a notice was sent.");
+    await page.getByRole("button", { name: "Continue" }).click();
+    await page.getByRole("button", { name: "Continue" }).click();
+    await page.getByRole("button", { name: "Continue" }).click();
+    await page.getByRole("button", { name: "Create matter" }).click();
+    await page.waitForURL(/\/matters\/[^/?]+\?created=1/);
+    await page.locator('aside[aria-label="Case tree"]').waitFor();
     await page.getByText("Documents in this matter").waitFor();
   });
 

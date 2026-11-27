@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Check, ChevronDown, ChevronRight, FileText, Link2, Network, Plus, Sparkles, Trash2, X } from "lucide-react";
 import { addCaseNode, deleteCaseNode, editCaseNode, importCaseNodesFromPapers, listCaseNodes } from "@/app/actions";
 import type { CaseNode, CaseNodeInput, CaseNodeKind, CaseNodeRelation, CaseNodeStatus } from "@/lib/types";
@@ -50,18 +50,19 @@ export default function CaseBrain({ matterId }: { matterId: string }) {
   const [closed, setClosed] = useState<Set<string>>(new Set());
   const [filter, setFilter] = useState<"all" | CaseNodeStatus>("all");
 
-  const load = useCallback(async () => {
-    try {
-      setNodes(await listCaseNodes(matterId));
-      setError(null);
-    } catch {
-      setError("We could not load the case tree. Please refresh the page.");
-    }
-  }, [matterId]);
-
   useEffect(() => {
-    if (matterId) void load();
-  }, [load, matterId]);
+    let active = true;
+    void listCaseNodes(matterId)
+      .then((next) => {
+        if (!active) return;
+        setNodes(next);
+        setError(null);
+      })
+      .catch(() => active && setError("We could not load the case tree. Please refresh the page."));
+    return () => {
+      active = false;
+    };
+  }, [matterId]);
 
   const byId = useMemo(() => new Map((nodes ?? []).map((n) => [n.id, n])), [nodes]);
   const sections = (nodes ?? []).filter((n) => n.kind === "section");
@@ -91,14 +92,14 @@ export default function CaseBrain({ matterId }: { matterId: string }) {
   }
 
   return (
-    <section aria-label="Case tree" className="mt-10">
+    <section aria-label="Case tree" className="mt-0">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h2 className="flex items-center gap-2 font-serif text-2xl tracking-[-0.03em]">
             <Network className="size-5 text-brand" /> Case tree
           </h2>
           <p className="mt-1 max-w-xl text-[13px] text-foreground/55">
-            Build what you know about this case: facts, issues, law and arguments, and how they connect.
+            Your confirmed entries ground every chat in this matter. Review proposed items from papers before relying on them.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -118,7 +119,7 @@ export default function CaseBrain({ matterId }: { matterId: string }) {
       {note && <p role="status" className="mt-4 rounded-xl bg-highlight px-4 py-3 text-[13px] text-foreground/80">{note}</p>}
       {nodes === null && !error && <p role="status" className="mt-6 text-[13px] text-foreground/55">Loading the case tree…</p>}
 
-      <div className="mt-5 grid gap-3">
+      <div className="mt-5 grid gap-4">
         {sections.map((section) => {
           const items = childrenOf(section.id).filter((n) => filter === "all" || n.status === filter);
           const open = !closed.has(section.id);
@@ -142,7 +143,7 @@ export default function CaseBrain({ matterId }: { matterId: string }) {
                 <span className="ml-auto text-[12px] text-foreground/45">{childrenOf(section.id).length}</span>
               </button>
               {open && (
-                <div className="mt-3 space-y-2">
+                <div className="relative mt-3 ml-2 space-y-2 border-l border-brand/25 pl-3">
                   {items.map((node) => (
                     <NodeRow
                       key={node.id}

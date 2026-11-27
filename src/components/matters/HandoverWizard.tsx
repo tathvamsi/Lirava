@@ -15,7 +15,7 @@ const URGENCY: Array<{ id: MatterIntake["urgency"]; label: string; hint: string 
   { id: "soon", label: "Soon", hint: "A date or filing is coming up" },
   { id: "urgent", label: "Urgent", hint: "Needs attention this week" },
 ];
-const STEPS = ["The case", "What happened", "Dates", "Documents", "Hand over"] as const;
+const STEPS = ["The case", "What happened", "Dates", "Documents", "Review"] as const;
 
 type FileUpload = { key: string; name: string; state: "uploading" | "done" | "error"; file?: Attachment; error?: string };
 type DateRow = { id: number; label: string; date: string };
@@ -23,7 +23,7 @@ type DateRow = { id: number; label: string; date: string };
 const formatDate = (value: string) => (value ? new Date(`${value}T00:00:00`).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "");
 
 /**
- * "Hand over a case": a short, guided briefing (the way a lawyer would take instructions) that creates the
+ * A short, guided briefing (the way a lawyer would take instructions) that creates the
  * matter, uploads the papers, and starts counsel on it. A live case note beside the form fills in as you answer.
  */
 export default function HandoverWizard() {
@@ -140,11 +140,11 @@ export default function HandoverWizard() {
         },
       });
       const attachments = uploads.filter((u) => u.state === "done" && u.file).map((u) => u.file!);
-      // The case is handed over once the matter exists; the first briefing chat starts counsel on it.
+      // Once the matter exists, the first briefing chat starts counsel on it.
       await startConversation(vakil.id, briefingMessage(), attachments, undefined, undefined, matter.id).catch(() => undefined);
-      router.push(`/matters/${encodeURIComponent(matter.id)}?handed=1`);
+      router.push(`/matters/${encodeURIComponent(matter.id)}?created=1`);
     } catch {
-      setError("We could not hand over the case. Nothing was lost. Please try again.");
+      setError("We could not create the matter. Nothing was lost. Please try again.");
       setSubmitting(false);
     }
   };
@@ -157,8 +157,8 @@ export default function HandoverWizard() {
         <ArrowLeft className="size-4" /> All matters
       </Link>
       <div className="mt-6 max-w-2xl">
-        <p className="text-[13px] font-medium text-brand-readable">Hand over a case</p>
-        <h1 className="mt-2 font-serif text-4xl tracking-[-0.04em] text-foreground sm:text-5xl">Brief your counsel.</h1>
+        <p className="text-[13px] font-medium text-brand-readable">New matter</p>
+        <h1 className="mt-2 font-serif text-4xl tracking-[-0.04em] text-foreground sm:text-5xl">Start a matter.</h1>
         <p className="mt-3 text-[15px] leading-relaxed text-foreground/65">
           Tell Lirava about the case the way you would brief a junior advocate. Counsel reads your papers, researches, drafts, and checks back with you before anything moves forward.
         </p>
@@ -269,7 +269,7 @@ export default function HandoverWizard() {
 
               {step === 3 && (
                 <div className="space-y-6">
-                  <Heading title="Hand over the papers" hint="Notices, agreements, orders, pleadings. Counsel reads them page by page and cites the page." />
+                  <Heading title="Add papers" hint="Notices, agreements, orders, pleadings. Counsel reads them page by page and cites the page." />
                   <div
                     onDragOver={(e) => (e.preventDefault(), setDragging(true))}
                     onDragLeave={() => setDragging(false)}
@@ -304,7 +304,7 @@ export default function HandoverWizard() {
 
               {step === 4 && (
                 <div className="space-y-6">
-                  <Heading title="Ready to hand over" hint="Here is what counsel will receive. Nothing is filed or sent to anyone." />
+                  <Heading title="Review your matter" hint="Here is what counsel will receive. Nothing is filed or sent to anyone." />
                   <dl className="divide-y divide-border rounded-xl border border-border text-[14px]">
                     <Row label="Case" value={`${matterTitle}${caseType ? ` · ${caseType}` : ""}`} />
                     <Row label="Parties" value={[client.trim(), oppositeParty.trim()].filter(Boolean).join(" against ") || "Not given"} />
@@ -315,7 +315,9 @@ export default function HandoverWizard() {
                   <div className="rounded-xl bg-highlight p-4 text-[13.5px] leading-relaxed text-foreground/80">
                     <p className="font-medium text-foreground">What happens next</p>
                     <ol className="mt-2 list-decimal space-y-1 pl-5">
+                      <li>Lirava turns your confirmed brief into a case knowledge tree: parties, facts, dates and objectives.</li>
                       <li>Counsel reads your brief and papers, and starts work straight away.</li>
+                      <li>Every chat in this matter uses the confirmed tree details before answering questions about the case.</li>
                       <li>You see each stage on the case timeline, with short updates from counsel.</li>
                       <li>Counsel stops and asks you to approve findings and drafts before going further.</li>
                     </ol>
@@ -338,7 +340,7 @@ export default function HandoverWizard() {
             ) : (
               <button type="button" onClick={() => void handOver()} disabled={submitting || !vakil} className="btn-primary inline-flex h-10 items-center gap-2 px-5 text-[13px] disabled:opacity-60">
                 {submitting ? <Loader2 className="size-4 animate-spin" /> : <Check className="size-4" />}
-                {submitting ? "Handing over…" : "Hand over the case"}
+                {submitting ? "Creating…" : "Create matter"}
               </button>
             )}
           </div>

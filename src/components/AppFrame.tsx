@@ -37,7 +37,7 @@ export default function AppFrame({
       <Suspense>
         <Sidebar />
       </Suspense>
-      <main className="app-shell flex min-w-0 flex-1 flex-col bg-background text-foreground">
+      <main className="app-shell flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto bg-background text-foreground">
         <Suspense>
           <MobileBar />
           <FloatingSidebarTrigger />

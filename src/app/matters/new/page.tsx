@@ -1,7 +1,7 @@
 import HandoverWizard from "@/components/matters/HandoverWizard";
 
-export const metadata = { title: "Hand over a case · Lirava" };
+export const metadata = { title: "New matter · Lirava" };
 
-export default function HandOverPage() {
+export default function NewMatterPage() {
   return <HandoverWizard />;
 }
