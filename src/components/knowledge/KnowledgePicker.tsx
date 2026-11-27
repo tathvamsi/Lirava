@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { BookOpen, Check } from "lucide-react";
 import { kbRequest, type KnowledgeBase, type LinkScope } from "@/lib/knowledge-api";
 
@@ -14,6 +15,24 @@ export default function KnowledgePicker({ scope, id, placement = "up" }: { scope
   const [attached, setAttached] = useState<string[] | null>(null);
   const [error, setError] = useState("");
   const ref = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  // The list is drawn on the page body, not inside the message box, so the message box and the panels beside it cannot
+  // clip or cover it. Its place comes from the button when it is opened.
+  const [pos, setPos] = useState<{ left: number; top?: number; bottom?: number } | null>(null);
+
+  const toggleOpen = () => {
+    if (open) {
+      setOpen(false);
+      return;
+    }
+    const rect = buttonRef.current?.getBoundingClientRect();
+    if (rect) {
+      const left = Math.max(8, Math.min(rect.left, window.innerWidth - 288 - 8));
+      setPos(placement === "up" ? { left, bottom: window.innerHeight - rect.top + 8 } : { left, top: rect.bottom + 8 });
+    }
+    setOpen(true);
+  };
 
   // The count on the button is shown without opening the list.
   useEffect(() => {
@@ -35,15 +54,20 @@ export default function KnowledgePicker({ scope, id, placement = "up" }: { scope
       if (!res.ok) setError(res.error);
     });
     const onDown = (e: PointerEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      const target = e.target as Node;
+      if (ref.current?.contains(target) || dialogRef.current?.contains(target)) return;
+      setOpen(false);
     };
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    const onResize = () => setOpen(false);
     window.addEventListener("pointerdown", onDown);
     window.addEventListener("keydown", onKey);
+    window.addEventListener("resize", onResize);
     return () => {
       active = false;
       window.removeEventListener("pointerdown", onDown);
       window.removeEventListener("keydown", onKey);
+      window.removeEventListener("resize", onResize);
     };
   }, [open]);
 
@@ -68,8 +92,9 @@ export default function KnowledgePicker({ scope, id, placement = "up" }: { scope
   return (
     <div ref={ref} className="relative">
       <button
+        ref={buttonRef}
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={toggleOpen}
         aria-haspopup="dialog"
         aria-expanded={open}
         title="Knowledge: attach your document collections"
@@ -79,8 +104,14 @@ export default function KnowledgePicker({ scope, id, placement = "up" }: { scope
         Knowledge{count > 0 && <span className="font-mono text-[10.5px]">{count}</span>}
       </button>
 
-      {open && (
-        <div role="dialog" aria-label="Attach knowledge" className={`absolute ${placement === "up" ? "bottom-9" : "top-9"} left-0 z-50 w-72 overflow-hidden rounded-xl border border-border bg-background py-1.5 text-foreground shadow-elevated animate-page-rise`}>
+      {open && pos && createPortal(
+        <div
+          ref={dialogRef}
+          role="dialog"
+          aria-label="Attach knowledge"
+          style={{ left: pos.left, top: pos.top, bottom: pos.bottom }}
+          className="fixed z-[70] w-72 overflow-hidden rounded-xl border border-border bg-background py-1.5 text-foreground shadow-elevated animate-page-rise"
+        >
           <p className="px-3 pt-1.5 pb-1 text-[12px] text-foreground/55">Answers in this {scope === "matter" ? "matter" : "chat"} can use these collections.</p>
           {bases === null ? (
             <p className="px-3 py-3 text-[13px] text-foreground/45">Loading…</p>
@@ -114,7 +145,8 @@ export default function KnowledgePicker({ scope, id, placement = "up" }: { scope
               Manage knowledge
             </Link>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );
