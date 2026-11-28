@@ -23,11 +23,14 @@ import {
   setActiveArtifact,
   setBoardWidthPreference,
   useStore,
+  watchAnswer,
 } from "@/lib/store";
 import { ArtifactBoard, ArtifactCard } from "./artifacts";
 import { SourceList } from "./SourceList";
 import { CitationCheck } from "./chat/CitationCheck";
-import { SourcePanel } from "./chat/SourcePanel";
+import { BottomLine, GapsBlock, NextMove } from "./chat/AnswerBlocks";
+import { certaintyOf, parseAnswerFormat, unconfirmedCitations } from "@/lib/answerFormat";
+import { SourcePopup } from "./chat/SourcePopup";
 import { CasePanel } from "./chat/CasePanel";
 import { WorkTrace, type TraceRow } from "./chat/WorkTrace";
 import { ClarifyCard } from "./chat/ClarifyCard";
@@ -118,10 +121,10 @@ export default function Chat({ vakil, conversation, matterId, matterLabel }: { v
   const activeId = useStore((s) => s.activeArtifactId);
   // The panel belongs to one chat: an artifact opened in another chat never shows here.
   const activeArtifactId = activeId && storeArtifacts.find((a) => a.id === activeId)?.conversationId === convId ? activeId : null;
-  // The source behind a citation opens beside the chat, in the same pane as documents.
+  // The source behind a citation opens as a pop-up over the chat, so it never displaces a document or the case panel.
   const [sourceState, setOpenSource] = useState<{ citation: Citation; convId: string | null } | null>(null);
   const openSource = sourceState && sourceState.convId === convId ? sourceState.citation : null;
-  // The case panel (outputs, case papers, case knowledge tree, sources used). An open document or source takes the pane first.
+  // The case panel (outputs, case papers, case knowledge tree, sources used). An open document takes the pane first.
   // It opens by itself in a matter's chat on a wide screen, and remembers what the lawyer chose.
   const [caseOpen, setCaseOpen] = useState(false);
   const panelMatterId = matterId ?? conversations.find((c) => c.id === convId)?.matterId ?? null;
@@ -137,13 +140,10 @@ export default function Chat({ vakil, conversation, matterId, matterLabel }: { v
     const timer = setTimeout(() => setCaseOpen(stored === null ? Boolean(panelMatterId) && wide : stored === "1" && wide), 0);
     return () => clearTimeout(timer);
   }, [panelMatterId]);
-  const rightPane: "artifact" | "source" | "case" | null = activeArtifactId ? "artifact" : openSource ? "source" : caseOpen ? "case" : null;
+  const rightPane: "artifact" | "case" | null = activeArtifactId ? "artifact" : caseOpen ? "case" : null;
   const toggleCasePanel = () => {
     const next = rightPane !== "case";
-    if (next) {
-      setActiveArtifact(null);
-      setOpenSource(null);
-    }
+    if (next) setActiveArtifact(null);
     setCaseOpen(next);
     try {
       localStorage.setItem("lirava.casePanel", next ? "1" : "0");
@@ -162,7 +162,6 @@ export default function Chat({ vakil, conversation, matterId, matterLabel }: { v
   }, [convId]);
   // Stable between renders, so rows that did not change are not re-rendered while an answer streams in.
   const openCitation = useCallback((citation: Citation) => {
-    setActiveArtifact(null);
     setOpenSource({ citation, convId });
   }, [convId]);
   const hasKey = useStore((s) => s.computer.hasKey || s.computer.openRouter !== null || s.computer.nvidia !== null || s.computer.groq !== null || s.computer.antigravity !== null);
@@ -294,6 +293,16 @@ export default function Chat({ vakil, conversation, matterId, matterLabel }: { v
   }, []);
   const lastMessage = messages[messages.length - 1];
   const unanswered = !fresh && !busy && vakil.status !== "working" && lastMessage?.role === "user" && now - lastMessage.createdAt > 45_000;
+
+  // The answer normally arrives through the live stream. If that stream is down or silent, the saved chat is read until the
+  // reply shows up, so the person never has to ask again or reload. It waits for the latest question while an answer is on its
+  // way, or while the newest message is a recent question with no reply (the stream may never have said an answer was started).
+  const waitingForReply = busy || (lastMessage?.role === "user" && now - lastMessage.createdAt < 10 * 60_000);
+  const watchedQuestionId = convId && lastUser && waitingForReply ? lastUser.id : null;
+  useEffect(() => {
+    if (!convId || !watchedQuestionId) return;
+    return watchAnswer(convId, watchedQuestionId);
+  }, [convId, watchedQuestionId]);
 
   const stop = () => {
     if (!busy) return;
@@ -541,7 +550,7 @@ export default function Chat({ vakil, conversation, matterId, matterLabel }: { v
           width={Math.min(effectiveBoardWidth, 400)}
         />
       )}
-      {(rightPane === "artifact" || rightPane === "source") && (
+      {rightPane === "artifact" && (
         <>
           <PaneSplitter
             onPointerDown={handleSplitterPointerDown}
@@ -550,19 +559,18 @@ export default function Chat({ vakil, conversation, matterId, matterLabel }: { v
             chatPercent={Math.max(10, Math.min(90, Math.round(((containerWidth - effectiveBoardWidth) / (containerWidth || 1)) * 100)))}
             boardPercent={Math.max(10, Math.min(90, Math.round((effectiveBoardWidth / (containerWidth || 1)) * 100)))}
           />
-          {rightPane === "artifact" ? (
-            <ArtifactBoard
-              conversationId={convId}
-              onClose={() => setActiveArtifact(null)}
-              width={effectiveBoardWidth}
-              isDragging={isResizingSplit}
-              onResetWidth={handleResetSplit}
-            />
-          ) : (
-            openSource && <SourcePanel citation={openSource} onClose={() => setOpenSource(null)} width={effectiveBoardWidth} />
-          )}
+          <ArtifactBoard
+            conversationId={convId}
+            onClose={() => setActiveArtifact(null)}
+            width={effectiveBoardWidth}
+            isDragging={isResizingSplit}
+            onResetWidth={handleResetSplit}
+          />
         </>
       )}
+
+      {/* The source behind a citation: a pop-up over the chat, not a side pane. */}
+      {openSource && <SourcePopup key={`${openSource.label}-${openSource.kind === "document" ? `${openSource.fileId}-${openSource.page}` : openSource.title}`} citation={openSource} onClose={() => setOpenSource(null)} />}
     </div>
   );
 }
@@ -894,6 +902,8 @@ export const MessageRow = memo(function MessageRow({
   clarifyDisabled?: boolean;
 }) {
   const artifacts = useStore((s) => s.artifacts);
+  // What the citation checker found in this answer (live only), used for the bottom line's badge.
+  const citationCheck = useStore((s) => s.citationChecks[m.id]);
 
   // Reasoning markup is presentation-only: keep the raw message in the store,
   // but do not let hidden content reach any user-facing assistant UI.
@@ -912,17 +922,28 @@ export const MessageRow = memo(function MessageRow({
     [m.role, visibleText],
   );
 
-  // Answers cite with bracketed numbers like [1] or [2, 3]. When the message carries the matching sources,
-  // each number becomes a chip that opens that source beside the chat.
+  // Answers cite with bracketed labels like [D1], [S2], [T3] or [D1, T2] (a letter and a number: document passage,
+  // statute, case-tree entry), or plain numbers like [1]. When the message carries the matching sources, each label
+  // becomes a chip that opens that source in a pop-up.
   const citationMap = useMemo(() => new Map((m.citations ?? []).map((c) => [c.label, c] as const)), [m.citations]);
-  const citedProse = useMemo(() => {
-    if (!citationMap.size) return prose;
-    return prose.replace(/\[(\d+(?:\s*,\s*\d+)*)\]/g, (whole, list: string) => {
-      const numbers = list.split(",").map((s) => s.trim());
-      if (!numbers.some((n) => citationMap.has(n))) return whole;
-      return numbers.map((n) => (citationMap.has(n) ? `[${n}](cite:${n})` : `[${n}]`)).join("");
-    });
-  }, [prose, citationMap]);
+  const linkCites = useCallback(
+    (text: string) => {
+      if (!citationMap.size) return text;
+      return text.replace(/\[((?:[A-Z]\d+|\d+)(?:\s*,\s*(?:[A-Z]\d+|\d+))*)\]/g, (whole, list: string) => {
+        const numbers = list.split(",").map((s) => s.trim());
+        if (!numbers.some((n) => citationMap.has(n))) return whole;
+        return numbers.map((n) => (citationMap.has(n) ? `[${n}](cite:${n})` : `[${n}]`)).join("");
+      });
+    },
+    [citationMap],
+  );
+  // An answer that starts with "Bottom line:" is shown as blocks (bottom line, body, gaps, next move); any other answer as written.
+  const parts = useMemo(() => {
+    if (m.role !== "vakil") return null;
+    const p = parseAnswerFormat(prose);
+    return p.bottomLine === null ? null : p;
+  }, [m.role, prose]);
+  const citedProse = useMemo(() => linkCites(parts ? parts.body : prose), [linkCites, parts, prose]);
   const markdownComponents = useMemo<Components>(
     () => ({
       a: ({ href, children, title }) => {
@@ -1015,6 +1036,12 @@ export const MessageRow = memo(function MessageRow({
   ) ?? [];
 
   const hasProse = prose.replace(/[…\s]/g, "") !== "" && !producedArtifact && !writingOutput;
+  const unconfirmed = isStreaming ? [] : unconfirmedCitations(citationCheck?.verdicts);
+  const renderMarkdown = (linked: string) => (
+    <Markdown remarkPlugins={[remarkGfm]} components={markdownComponents} urlTransform={(url) => (url.startsWith("cite:") ? url : defaultUrlTransform(url))}>
+      {linked}
+    </Markdown>
+  );
 
   return (
     <div className="animate-message-rise">
@@ -1052,13 +1079,16 @@ export const MessageRow = memo(function MessageRow({
 
         {hasProse && (
           <div className="dot-prose">
-            <Markdown
-              remarkPlugins={[remarkGfm]}
-              components={markdownComponents}
-              urlTransform={(url) => (url.startsWith("cite:") ? url : defaultUrlTransform(url))}
-            >
-              {citedProse}
-            </Markdown>
+            {parts ? (
+              <>
+                <BottomLine certainty={isStreaming ? null : certaintyOf(m.citations, citationCheck?.verdicts)}>{renderMarkdown(linkCites(parts.bottomLine ?? ""))}</BottomLine>
+                {parts.body.trim() !== "" && renderMarkdown(citedProse)}
+                {(parts.gaps || unconfirmed.length > 0) && <GapsBlock unconfirmed={unconfirmed}>{parts.gaps ? renderMarkdown(linkCites(parts.gaps)) : null}</GapsBlock>}
+                {parts.nextMove && <NextMove>{renderMarkdown(linkCites(parts.nextMove))}</NextMove>}
+              </>
+            ) : (
+              renderMarkdown(citedProse)
+            )}
             {isStreaming && (
               <span className="ml-1 inline-block h-3.5 w-1.5 rounded-xs bg-brand animate-pulse align-middle" />
             )}

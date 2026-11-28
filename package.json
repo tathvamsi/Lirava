@@ -13,7 +13,7 @@
     "db:migrate": "drizzle-kit migrate",
     "db:migrate-sqlite": "tsx scripts/migrate-sqlite-to-postgres.ts",
     "db:studio": "drizzle-kit studio",
-    "test": "node --import tsx --test tests/theme.test.ts tests/agent-compatibility.test.ts tests/detector.test.ts tests/citationCheck.test.ts",
+    "test": "node --import tsx --test tests/theme.test.ts tests/agent-compatibility.test.ts tests/detector.test.ts tests/citationCheck.test.ts tests/answerFormat.test.ts",
     "check": "pnpm typecheck && pnpm lint && pnpm test",
     "e2e": "node tests/e2e/core.e2e.mjs"
   },

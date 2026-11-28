@@ -88,7 +88,7 @@ export function CasePanel({
     const seen = new Map<string, Citation>();
     for (const m of messages) {
       for (const c of m.citations ?? []) {
-        const key = c.kind === "document" ? `d:${c.fileId}:${c.page}` : `s:${c.title}:${c.section ?? ""}`;
+        const key = c.kind === "document" ? `d:${c.fileId}:${c.page}` : c.kind === "case" ? `t:${c.nodeId}` : `s:${c.title}:${c.section ?? ""}`;
         if (!seen.has(key)) seen.set(key, c);
       }
     }
@@ -222,7 +222,7 @@ export function CasePanel({
               {sources.map((c, i) => (
                 <li key={i}>
                   <button type="button" onClick={() => onOpenSource(c)} className="flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left hover:bg-highlight">
-                    {c.kind === "document" ? <FileText className="size-4 shrink-0 text-muted" strokeWidth={1.75} /> : <BookOpen className="size-4 shrink-0 text-muted" strokeWidth={1.75} />}
+                    {c.kind === "document" ? <FileText className="size-4 shrink-0 text-muted" strokeWidth={1.75} /> : c.kind === "case" ? <Network className="size-4 shrink-0 text-muted" strokeWidth={1.75} /> : <BookOpen className="size-4 shrink-0 text-muted" strokeWidth={1.75} />}
                     <span className="min-w-0 flex-1 truncate text-[13px] text-foreground">{c.kind === "document" ? c.name : c.title}</span>
                     <span className="shrink-0 text-[11.5px] text-muted">{c.kind === "document" ? `p. ${c.page}` : c.section ?? ""}</span>
                   </button>

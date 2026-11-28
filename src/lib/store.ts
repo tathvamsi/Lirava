@@ -286,9 +286,17 @@ function notify(vakilId: string, title: string, body: string) {
   setTimeout(() => dismissToast(toast.id), 7000);
 }
 
+let lastEventAt = 0;
+let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+let reconnectAttempts = 0;
+
 function connect() {
   source = new EventSource("/api/events");
+  source.onopen = () => {
+    reconnectAttempts = 0;
+  };
   source.onmessage = (e) => {
+    lastEventAt = Date.now();
     if (!e.data || e.data.startsWith(":") || e.data.trim() === "ping") return;
     try {
       apply(JSON.parse(e.data) as ServerEvent);
@@ -296,12 +304,73 @@ function connect() {
       // Ignore keep-alive or malformed frames gracefully
     }
   };
-  source.onerror = () => set({ connected: false }); // EventSource reconnects and receives a fresh snapshot
+  source.onerror = () => {
+    set({ connected: false });
+    // While the browser is still retrying, a fresh snapshot follows by itself. But when the server answered with an error
+    // (the proxy returns 502 for a moment when the API is unreachable) the browser gives up for good, and the page would
+    // never hear another answer until it was reloaded. So it is opened again here, waiting a little longer each time.
+    if (source?.readyState !== EventSource.CLOSED || reconnectTimer) return;
+    source = null;
+    const wait = Math.min(30_000, 1000 * 2 ** reconnectAttempts++);
+    reconnectTimer = setTimeout(() => {
+      reconnectTimer = null;
+      if (!source && listeners.size > 0) connect();
+    }, wait);
+  };
 }
 
 function disconnect() {
+  if (reconnectTimer) clearTimeout(reconnectTimer);
+  reconnectTimer = null;
+  reconnectAttempts = 0;
   source?.close();
   source = null;
+}
+
+/**
+ * Makes sure an answer that is being waited for shows up even when the live stream does not carry it (the stream is down,
+ * or the answer was produced by another server instance than the one holding the stream). While the stream is silent, the
+ * saved chat is read every few seconds; the answer is saved in one piece when it is finished, so finding a reply after
+ * the question means the run is over. Returns a function that stops watching.
+ */
+export function watchAnswer(conversationId: string, questionId: string): () => void {
+  let stopped = false;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const startedAt = Date.now();
+  const tick = async () => {
+    if (stopped) return;
+    // Anything arriving on the stream (text, status) means it is working: leave it alone.
+    const streamQuiet = Date.now() - lastEventAt > 6000;
+    if (streamQuiet && document.visibilityState === "visible") {
+      try {
+        const res = await fetch(`/api/conversations/${encodeURIComponent(conversationId)}`, { cache: "no-store" });
+        if (stopped) return;
+        if (res.ok) {
+          const saved = ((await res.json()) as { messages?: Message[] }).messages ?? [];
+          const at = saved.findIndex((m) => m.id === questionId);
+          const replies = at === -1 ? [] : saved.slice(at + 1).filter((m) => m.role !== "user");
+          if (replies.length > 0) {
+            flushDeltas();
+            let messages = state.messages;
+            for (const m of saved) messages = upsert(messages, m);
+            const running = { ...state.running };
+            delete running[conversationId];
+            set({ messages, running });
+            return;
+          }
+        }
+      } catch {
+        // A network blip: try again on the next round.
+      }
+    }
+    if (stopped || Date.now() - startedAt > 10 * 60_000) return;
+    timer = setTimeout(tick, 3000);
+  };
+  timer = setTimeout(tick, 4000);
+  return () => {
+    stopped = true;
+    clearTimeout(timer);
+  };
 }
 
 /**

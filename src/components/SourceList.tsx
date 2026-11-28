@@ -1,6 +1,6 @@
 "use client";
 
-import { BookOpen, FileText } from "lucide-react";
+import { BookOpen, FileText, Network } from "lucide-react";
 import type { Citation } from "@/lib/types";
 
 /**
@@ -19,8 +19,8 @@ export function SourceList({ citations, onOpen }: { citations: Citation[]; onOpe
       <ul className="flex flex-wrap gap-2">
         {citations.map((c) => {
           const isDocument = c.kind === "document";
-          const Icon = isDocument ? FileText : BookOpen;
-          const text = isDocument ? `${c.name}, ${c.unit === "page" ? "p." : "s."} ${c.page}` : [c.title, c.section].filter(Boolean).join(", ");
+          const Icon = isDocument ? FileText : c.kind === "case" ? Network : BookOpen;
+          const text = isDocument ? `${c.name}, ${c.unit === "page" ? "p." : "s."} ${c.page}` : c.kind === "case" ? c.title : [c.title, c.section].filter(Boolean).join(", ");
           const body = (
             <>
               <span className="font-mono text-[10px] text-brand-readable">{c.label}</span>

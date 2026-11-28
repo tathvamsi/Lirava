@@ -64,7 +64,9 @@ export type Attachment = { id: string; name: string; mime: string; size: number;
 /** A source an answer drew on: a passage of the user's own document (with its page), or a statute provision. */
 export type Citation =
   | { kind: "document"; label: string; fileId: string; name: string; page: number; unit: "page" | "section"; excerpt: string }
-  | { kind: "statute"; label: string; title: string; act?: string; section?: string; source?: string };
+  | { kind: "statute"; label: string; title: string; act?: string; section?: string; source?: string }
+  /** An entry of the matter's case knowledge tree (labelled T1, T2…): a lawyer-confirmed fact, not legal authority. */
+  | { kind: "case"; label: string; nodeId: string; title: string; section?: string; body?: string; date?: string; nodeKind?: string };
 
 export type ArtifactKind = "legal_paper" | "text" | "markdown" | "pdf" | "docx" | "contract" | "plan";
 

@@ -636,3 +636,82 @@ html {
 }
 .soli-marketing a:not(.bg-action) { text-decoration-color: var(--lirava-accent); text-underline-offset: .16em; }
 .soli-marketing a:not(.bg-action):hover { text-decoration-thickness: 2px; }
+
+/* Source pop-up: a native modal <dialog> opened from a citation chip. Display is scoped to [open] so the closed state stays hidden. */
+.source-popup {
+  margin: auto;
+  padding: 0;
+  width: min(36rem, calc(100vw - 2rem));
+  max-height: min(80dvh, 40rem);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--background);
+  color: var(--foreground);
+  box-shadow: var(--shadow-elevated, 0 24px 64px rgb(0 0 0 / 0.45));
+  overscroll-behavior: contain;
+  opacity: 0;
+  transition-property: opacity, translate, display, overlay;
+  transition-duration: 0.2s;
+  transition-timing-function: ease-out;
+  transition-behavior: allow-discrete;
+  @media (prefers-reduced-motion: no-preference) {
+    translate: 0 12px;
+  }
+}
+.source-popup[open]:not([data-closing]) {
+  display: flex;
+  flex-direction: column;
+  opacity: 1;
+  @starting-style {
+    opacity: 0;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    translate: 0 0;
+    @starting-style {
+      translate: 0 12px;
+    }
+  }
+}
+.source-popup[open][data-closing] {
+  display: flex;
+  flex-direction: column;
+}
+.source-popup::backdrop {
+  overflow: hidden;
+  overscroll-behavior: contain;
+  background-color: rgb(0 0 0 / 0);
+  transition-property: background-color, display, overlay;
+  transition-duration: 0.2s;
+  transition-behavior: allow-discrete;
+}
+.source-popup[open]:not([data-closing])::backdrop {
+  background-color: rgb(0 0 0 / 0.55);
+  @starting-style {
+    background-color: rgb(0 0 0 / 0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .source-popup,
+  .source-popup::backdrop {
+    transition-duration: 0.1s;
+  }
+}
+/* The retrieved passage is highlighted with a sweep when the pop-up opens. */
+.source-popup-mark {
+  background-image: linear-gradient(color-mix(in oklab, var(--brand) 30%, transparent), color-mix(in oklab, var(--brand) 30%, transparent));
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .source-popup[open]:not([data-closing]) .source-popup-mark {
+    animation: source-mark-sweep 0.8s 0.25s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  }
+}
+@keyframes source-mark-sweep {
+  from {
+    background-size: 0% 100%;
+  }
+}
